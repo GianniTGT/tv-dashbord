@@ -16,7 +16,7 @@ return [
     // Google Kalender: Einstellungen → Kalender → "Privatadresse im iCal-Format"
     // Mehrere Kalender möglich (Familie, Arbeit, Schule ...)
     'ical' => [
-        // ['name' => 'Familie', 'color' => '#7aa2f7', 'url' => 'https://calendar.google.com/calendar/ical/.../basic.ics'],
+        // ['name' => 'Familie', 'color' => '#f6bf26', 'url' => 'https://calendar.google.com/calendar/ical/.../basic.ics'],
     ],
 
     // Familienmitglieder für die Pinnwand ("für wen" / "von wem")

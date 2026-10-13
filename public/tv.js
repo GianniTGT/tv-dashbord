@@ -258,7 +258,7 @@
     // Termine: Google-Kalender + eigene Termine, nächste 7 Tage
     var evs = state.cal.slice();
     (d.events || []).forEach(function (e) {
-      evs.push({ title: e.title, date: e.date, time: e.time, color: '#e0af68' });
+      evs.push({ title: e.title, date: e.date, time: e.time, color: '#6fbf9f' });   // Handy-Termine: grün
     });
     evs = evs.filter(function (e) { var diff = daysBetween(today, e.date); return diff >= 0 && diff < 7; });
     evs.sort(function (a, b) { return (a.date + (a.time || '00:00')).localeCompare(b.date + (b.time || '00:00')); });
