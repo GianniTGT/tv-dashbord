@@ -49,6 +49,8 @@ function brute_fail() {
 }
 // Prüft das Passwort aus dem Header X-Token; true wenn korrekt
 function token_ok($cfg) {
+    $protect = $cfg['brute_protect'] ?? true;
+    if (!$protect) return hash_equals((string)$cfg['token'], (string)($_SERVER['HTTP_X_TOKEN'] ?? ''));
     if (brute_blocked()) { http_response_code(429); header('Content-Type: application/json'); echo json_encode(['error' => 'Zu viele Fehlversuche – in einer Stunde wieder versuchen']); exit; }
     $ok = hash_equals((string)$cfg['token'], (string)($_SERVER['HTTP_X_TOKEN'] ?? ''));
     if (!$ok && ($_SERVER['HTTP_X_TOKEN'] ?? '') !== '') brute_fail();

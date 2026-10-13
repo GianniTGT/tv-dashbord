@@ -7,6 +7,9 @@ return [
     // Geheimes Passwort für die Handy-Bearbeitungsseite (admin.html)
     'token' => 'HIER-EIN-LANGES-PASSWORT',
 
+    // Schutz gegen Passwort-Durchprobieren (2 s Pause, Sperre nach 10 Fehlversuchen/Std.): true = an, false = aus
+    'brute_protect' => true,
+
     // Lese-Schlüssel für den TV (steht in config.js als DASH_KEY). Ohne ihn sieht niemand die Pinnwand.
     'view_key' => 'HIER-EIN-ZWEITER-SCHLUESSEL',
 
