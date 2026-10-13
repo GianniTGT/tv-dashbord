@@ -1,0 +1,5 @@
+{
+  "_info": "Einstellungen ohne Geheimnisse – werden automatisch über GitHub auf den Server geladen und gehen vor config.php.",
+  "night_from": "00:00",
+  "night_to": "05:30"
+}

@@ -18,6 +18,9 @@ if (!file_exists($cfgFile)) {
 }
 $cfg = require $cfgFile;
 require __DIR__ . '/lib.php';
+// settings.json (kommt automatisch über GitHub) überschreibt einfache Einstellungen aus config.php
+$sj = @json_decode(@file_get_contents(__DIR__ . '/settings.json'), true);
+if (is_array($sj)) foreach (['night_from', 'night_to', 'photo_seconds', 'lang'] as $k) if (isset($sj[$k])) $cfg[$k] = $sj[$k];
 $dataFile = __DIR__ . '/data/dashboard.json';
 
 $empty = [
