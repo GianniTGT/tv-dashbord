@@ -35,6 +35,12 @@ webos/                        → LG-App-Daten (appinfo.json, Icons)
 - **Ayah des Tages:** Jeden Tag ein anderer Vers aus einer Auswahl von 62 aufbauenden Versen (Geduld, Vertrauen, Dankbarkeit, Familie, Bittgebete). Angezeigt werden Arabisch und Deutsch (Bubenheim/Elyas). Albanisch lässt sich in `config.php` mit `'ayah_translations' => ['de.bubenheim', 'sq.ahmeti']` dazuschalten.
   Wer auf dem Handy einen **eigenen Spruch** setzt, ersetzt damit die Ayah, bis er wieder gelöscht wird.
 
+## Salah-Zeiten
+
+Die 6 Zeiten (Sabahu, Lindja e diellit, Dreka, Ikindia, Akshami, Jacia) kommen täglich von api.aladhan.com für die Koordinaten in `config.php`. Das nächste Gebet ist golden markiert mit Countdown, 20 Minuten nach Beginn steht "tani". Unter dem Datum steht das Hijri-Datum.
+
+Einstellungen: `prayer_method` (13 = Diyanet, 3 = Muslim World League …), `prayer_school` (0 Standard, 1 Hanafi), `prayer_tune` (Minuten-Korrektur pro Gebet, damit es zur eigenen Moschee passt).
+
 ## Sprache
 
 In `config.php`: `'lang' => 'sq'` für Shqip (Albanisch) oder `'de'` für Deutsch. Für die Ayah passend `'ayah_translations' => ['sq.ahmeti']` (Albanisch), `['de.bubenheim']` (Deutsch) oder beide.

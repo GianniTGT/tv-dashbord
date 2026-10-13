@@ -26,6 +26,9 @@
       quote: 'SPRUCH DES TAGES', ayahRef: function (s, n, v) { return 'Sure ' + s + ' · ' + n + ' · Vers ' + v; },
       connecting: 'Verbinde …', offline: function (m) { return 'Offline seit ' + m + ' Min.'; },
       noPhotos: 'Fotos über das Handy hinzufügen',
+      PR: { Fajr: 'Fajr', Sunrise: 'Sonnenaufgang', Dhuhr: 'Dhuhr', Asr: 'Asr', Maghrib: 'Maghrib', Isha: 'Isha' },
+      inT: function (h, m) { return 'in ' + (h ? h + ' h ' : '') + m + ' min'; }, nowP: 'jetzt',
+      HM: ['Muharram', 'Safar', 'Rabi al-awwal', 'Rabi al-thani', 'Dschumada al-ula', 'Dschumada al-achira', 'Radschab', 'Schaban', 'Ramadan', 'Schawwal', 'Dhul-Qada', 'Dhul-Hiddscha'],
       W: { 0: 'Klar', 1: 'Überwiegend klar', 2: 'Teilweise bewölkt', 3: 'Bedeckt', 45: 'Nebel', 48: 'Nebel',
         51: 'Nieselregen', 53: 'Nieselregen', 55: 'Nieselregen', 61: 'Leichter Regen', 63: 'Regen', 65: 'Starker Regen',
         66: 'Eisregen', 67: 'Eisregen', 71: 'Leichter Schnee', 73: 'Schnee', 75: 'Starker Schnee', 77: 'Schneegriesel',
@@ -49,6 +52,9 @@
       quote: 'THËNIA E DITËS', ayahRef: function (s, n, v) { return 'Sureja ' + s + ' · ' + n + ' · Ajeti ' + v; },
       connecting: 'Duke u lidhur …', offline: function (m) { return 'Pa lidhje prej ' + m + ' min.'; },
       noPhotos: 'Shto foto nga telefoni',
+      PR: { Fajr: 'Sabahu', Sunrise: 'Lindja e diellit', Dhuhr: 'Dreka', Asr: 'Ikindia', Maghrib: 'Akshami', Isha: 'Jacia' },
+      inT: function (h, m) { return 'pas ' + (h ? h + ' orë ' : '') + m + ' min'; }, nowP: 'tani',
+      HM: ['Muharrem', 'Safer', 'Rebiul-evvel', 'Rebiul-ahir', 'Xhumadel-ula', 'Xhumadel-ahire', 'Rexheb', 'Shaban', 'Ramazan', 'Sheval', 'Dhul-kade', 'Dhul-hixhe'],
       W: { 0: 'Kthjellët', 1: 'Kryesisht kthjellët', 2: 'Pjesërisht me re', 3: 'Vranët', 45: 'Mjegull', 48: 'Mjegull',
         51: 'Shi i imët', 53: 'Shi i imët', 55: 'Shi i imët', 61: 'Shi i lehtë', 63: 'Shi', 65: 'Shi i fortë',
         66: 'Shi i ngrirë', 67: 'Shi i ngrirë', 71: 'Borë e lehtë', 73: 'Borë', 75: 'Borë e dendur', 77: 'Kokrriza bore',
@@ -169,7 +175,7 @@
       var langChanged = (I18N[d.settings.lang] || I18N.de) !== L;
       setLang(d.settings.lang);
       applyStaticTexts();
-      if (langChanged) { tick(); loadWeather(); }
+      if (langChanged) { tick(); loadWeather(); renderPrayers(); }
       state.lastOk = Date.now();
       render();
       setPhotos(d.photos || []);
@@ -475,6 +481,58 @@
     }
   }
 
+  // ---------- Salah-Zeiten ----------
+  var prayerData = null, prayerDay = '';
+  var PR_ORDER = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+  function loadPrayers() {
+    var today = ymd(new Date());
+    if (prayerData && prayerDay === today) return renderPrayers();
+    getJSON(API + 'prayer.php?k=' + KEY, function (err, p) {
+      if (err || !p || !p.today) return;
+      prayerData = p; prayerDay = p.today.date;
+      renderPrayers();
+    });
+  }
+  function renderPrayers() {
+    var box = $('prayers');
+    if (!prayerData) return;
+    var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    var t = prayerData.today.times;
+    // nächstes Gebet bestimmen (Sonnenaufgang zählt nicht als Gebet)
+    var nextKey = null, nextMin = 0, nowKey = null;
+    for (var i = 0; i < PR_ORDER.length; i++) {
+      var k = PR_ORDER[i], m = minutes(t[k]);
+      if (k !== 'Sunrise' && nowMin >= m && nowMin < m + 20) nowKey = k;   // 20 Min. lang "jetzt"
+      if (!nextKey && k !== 'Sunrise' && m > nowMin) { nextKey = k; nextMin = m; }
+    }
+    var tomorrowFajr = false;
+    if (!nextKey && prayerData.tomorrow) { nextKey = 'Fajr'; nextMin = minutes(prayerData.tomorrow.times.Fajr) + 1440; tomorrowFajr = true; }
+
+    box.innerHTML = '';
+    PR_ORDER.forEach(function (k) {
+      var m = minutes(t[k]);
+      var cls = 'prayer' + (k === 'Sunrise' ? ' sun' : '');
+      var isNext = k === nextKey && !(tomorrowFajr && k === 'Fajr' && false);
+      if (k === nowKey) cls += ' now';
+      else if (isNext) cls += ' next';
+      else if (m <= nowMin) cls += ' past';
+      var tile = el('div', cls);
+      tile.appendChild(el('div', 'pn', L.PR[k]));
+      tile.appendChild(el('div', 'pt', tomorrowFajr && k === 'Fajr' ? prayerData.tomorrow.times.Fajr : t[k]));
+      if (k === nowKey) tile.appendChild(el('div', 'cd', L.nowP));
+      else if (isNext) { var diff = nextMin - nowMin; tile.appendChild(el('div', 'cd', L.inT(Math.floor(diff / 60), diff % 60))); }
+      box.appendChild(tile);
+    });
+    box.classList.remove('hidden');
+    if ($('stage').className !== 'with-prayers') {
+      $('stage').className = 'with-prayers';
+      render();            // Platz ist kleiner geworden → Karten neu einpassen
+    }
+    // Hijri-Datum
+    var h = prayerData.today.hijri;
+    if (h) $('hijri').textContent = h.day + ' ' + L.HM[h.month - 1] + ' ' + h.year;
+  }
+
   function showStatus() {
     var s = $('status');
     if (!state.lastOk) { s.textContent = L.connecting; return; }
@@ -488,12 +546,14 @@
   loadCalendar();
   setTimeout(loadWeather, 1500);
   loadAyah();
+  loadPrayers();
 
   setInterval(tick, 1000);
   setInterval(loadData, 30 * 1000);          // Pinnwand/Notizen: alle 30 s
   setInterval(loadCalendar, 5 * 60 * 1000);  // Kalender: alle 5 min
   setInterval(loadWeather, 30 * 60 * 1000);  // Wetter: alle 30 min
-  setInterval(loadAyah, 30 * 60 * 1000);     // Ayah: neuer Tag → neuer Vers
+  setInterval(loadAyah, 30 * 60 * 1000);
+  setInterval(loadPrayers, 30 * 1000);        // Countdown / neuer Tag     // Ayah: neuer Tag → neuer Vers
   setInterval(pixelShift, 3 * 60 * 1000);    // OLED-Schutz
   setInterval(function () { if (!isNight(new Date()) && !(player && !player.paused)) location.reload(); }, 6 * 60 * 60 * 1000); // Speicher frisch halten
 })();

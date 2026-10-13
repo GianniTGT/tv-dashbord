@@ -28,8 +28,8 @@ html, body {
 
 /* ---- Kopfzeile ---- */
 .top { display: flex; align-items: flex-start; justify-content: space-between; height: 190px; }
-.clock { font-size: 120px; font-weight: 200; letter-spacing: 2px; line-height: 1; color: var(--text); }
-.date { font-size: 34px; color: var(--muted); margin-top: 14px; }
+.clock { font-size: 112px; font-weight: 200; letter-spacing: 2px; line-height: 1; color: var(--text); }
+.date { font-size: 32px; color: var(--muted); margin-top: 10px; }
 .message {
   flex: 1; margin: 20px 60px 0; padding: 22px 30px; text-align: center;
   font-size: 40px; color: var(--warn); border: 1px solid #3a2f1a; border-radius: 14px;
@@ -47,6 +47,35 @@ html, body {
   display: grid; grid-template-columns: 1.2fr 1fr 0.95fr; grid-column-gap: 28px;
   height: 590px; margin-top: 10px;
 }
+/* Mit Gebetszeiten wird das Raster etwas niedriger */
+.with-prayers .grid { height: 470px; margin-top: 14px; }
+.with-prayers .top { height: 202px; }
+.with-prayers .photo { height: 225px; }
+
+/* ---- Salah-Zeiten ---- */
+.prayers {
+  display: grid; grid-template-columns: repeat(6, 1fr); grid-column-gap: 14px;
+  height: 92px; margin-top: 0;
+}
+.prayer {
+  border: 1px solid rgba(46, 160, 120, 0.30); border-radius: 14px; background: #050505;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+}
+.prayer .pn { font-size: 21px; color: #6fbf9f; letter-spacing: 1px; }
+.prayer .pt { font-size: 36px; font-weight: 300; color: var(--text); line-height: 1.15; }
+.prayer.sun { border-color: #1d1d1d; }
+.prayer.sun .pn, .prayer.sun .pt { color: var(--muted); }
+.prayer.past .pt, .prayer.past .pn { opacity: 0.4; }
+.prayer.next { border: 2px solid #d4b876; background: #0d0b05; }
+.prayer.next .pn { color: #d4b876; font-weight: 600; }
+.prayer.next .pt { color: #f0dca8; font-weight: 400; }
+.prayer .cd {
+  position: absolute; bottom: -1px; left: 50%; transform: translate(-50%, 50%);
+  background: #d4b876; color: #000; font-size: 15px; font-weight: 700; border-radius: 8px; padding: 1px 10px; white-space: nowrap;
+}
+.prayer.now { border: 2px solid #6fbf9f; background: #04110c; }
+.prayer.now .cd { background: #6fbf9f; }
+.hijri { font-size: 24px; color: #a08a5c; margin-top: 6px; }
 /* Jeder Bereich als eigene Karte: dünner Rahmen, sonst schwarz (OLED) */
 .panel {
   border: 1px solid #262626; border-radius: 18px; padding: 20px 26px;

@@ -50,6 +50,13 @@ return [
     // Mehrere möglich, z. B. ['de.bubenheim', 'sq.ahmeti']
     'ayah_translations' => ['de.bubenheim'],
 
+    // Salah-Zeiten (api.aladhan.com) – Methode: 13 = Diyanet, 3 = Muslim World League, 2 = ISNA, 12 = UOIF (Frankreich)
+    'prayer_method' => 13,
+    // Ikindia: 0 = Standard (Shafi), 1 = Hanafi (später)
+    'prayer_school' => 0,
+    // Korrektur in Minuten, damit es genau zur eigenen Moschee passt (z. B. 'Isha' => 5)
+    'prayer_tune' => ['Fajr' => 0, 'Sunrise' => 0, 'Dhuhr' => 0, 'Asr' => 0, 'Maghrib' => 0, 'Isha' => 0],
+
     // Nachtmodus (OLED-Schutz): Bildschirm fast schwarz in diesem Zeitraum
     'night_from' => '23:00',
     'night_to'   => '06:00',
