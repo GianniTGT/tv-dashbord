@@ -17,7 +17,7 @@
 html, body {
   width: 1920px; height: 1080px;
   background: var(--bg); color: var(--text);
-  font-family: "LG Smart UI", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: "LG Smart UI", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji";
   overflow: hidden;
 }
 

@@ -45,6 +45,8 @@
   .filebtn { display:block; text-align:center; background:#1c2333; color:var(--accent); border:1px dashed #33405e; border-radius:10px; padding:12px; cursor:pointer; }
   .filebtn input { display:none; }
   .progress { color:var(--muted); font-size:14px; margin-top:8px; }
+  .emojis { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0 8px; }
+  .emojis button { width:auto; background:transparent; border:1px solid var(--line); padding:4px 7px; font-size:22px; line-height:1; border-radius:8px; }
   .empty { color:var(--muted); font-size:14px; padding:10px 0 0; }
 </style>
 </head>
@@ -67,6 +69,7 @@
   <div class="card">
     <div style="color:var(--muted);font-size:14px;margin-bottom:6px">Für wen?</div>
     <div class="chips" id="toChips"></div>
+    <div class="emojis" data-for="noteText"></div>
     <textarea id="noteText" placeholder="z. B. Pass auf die Katze auf 🐱"></textarea>
     <label class="chk"><input type="checkbox" id="noteToday" checked> Nur heute anzeigen</label>
     <button id="noteAdd">Auf den TV schicken</button>
@@ -77,6 +80,7 @@
   <div class="card">
     <div style="color:var(--muted);font-size:14px;margin-bottom:6px">Für wen?</div>
     <div class="chips" id="vToChips"></div>
+    <div class="emojis" data-for="vTitle"></div>
     <input id="vTitle" placeholder="Titel (optional), z. B. Gute Nacht 🌙">
     <div class="rec">
       <button class="recbtn" id="recBtn" aria-label="Aufnehmen">●</button>
@@ -378,6 +382,25 @@ $('quoteSave').onclick = () => { const v = $('quote').value.trim(); mutate(d => 
 $('quoteClear').onclick = () => mutate(d => { d.quote = ''; }, 'Ayah wird angezeigt');
 $('msgClear').onclick = () => mutate(d => { d.message = ''; }, 'Banner entfernt');
 $('logout').onclick = () => { store.del('dash_token'); showLogin(); };
+
+// ---------- Emoji-Leiste ----------
+const EMOJIS = ['❤️','😊','😂','👍','🙏','🤲','🌙','☀️','🐱','🍽️','🛒','🏫','🚗','⚽','🎂','🎉','⏰','📅','💊','🧹','📚','✅','⚠️','🏠'];
+document.querySelectorAll('.emojis').forEach(bar => {
+  const target = $(bar.dataset.for);
+  EMOJIS.forEach(e => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = e;
+    b.onclick = () => {
+      const pos = target.selectionStart ?? target.value.length;
+      const end = target.selectionEnd ?? pos;
+      target.value = target.value.slice(0, pos) + e + target.value.slice(end);
+      target.focus();
+      const np = pos + e.length;
+      try { target.setSelectionRange(np, np); } catch (x) {}
+    };
+    bar.appendChild(b);
+  });
+});
 
 function showLogin() { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
 $('pwBtn').onclick = () => { store.set('dash_token', $('pw').value); start(); };
