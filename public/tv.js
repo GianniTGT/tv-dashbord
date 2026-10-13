@@ -381,7 +381,7 @@
     photoKnown = sig;
     state.photos = list;
     photoQueue = [];
-    if (!list.length) { $('photoA').className = ''; $('photoB').className = ''; return; }
+    if (!list.length) { $('photoA').className = 'slide'; $('photoB').className = 'slide'; return; }
     if (isNew) photoQueue.push(list[0]);          // neu hochgeladenes Foto sofort zeigen
     if (!photoTimer || isNew) nextPhoto();
     if (!photoTimer) photoTimer = setInterval(nextPhoto, ((state.settings && state.settings.photo_seconds) || 20) * 1000);
@@ -392,17 +392,18 @@
     if (!photoQueue.length) photoQueue = shuffle(list.slice());
     var p = photoQueue.shift();
     var back = photoFront === 'photoA' ? 'photoB' : 'photoA';
-    var img = $(back);
+    var slide = $(back), fg = slide.querySelector('.fg'), bg = slide.querySelector('.bg');
     var kb = 'kb' + (1 + Math.floor(Math.random() * 4));
-    img.onload = function () {
-      img.className = 'show ' + kb;
+    var url = mediaUrl(p.src);
+    fg.onload = function () {
+      bg.src = url;
+      slide.className = 'slide show ' + kb;
       var old = $(photoFront);
-      setTimeout(function () { if (old !== img) old.className = ''; }, 2600);  // erst nach dem Überblenden stoppen
+      setTimeout(function () { if (old !== slide) old.className = 'slide'; }, 2600);  // erst nach dem Überblenden ausblenden
       photoFront = back;
     };
-    var url = mediaUrl(p.src);
-    if (img.src.indexOf(url) >= 0 || img.getAttribute('src') === url) img.onload();  // gleiches Bild (nur 1 Foto)
-    else img.src = url;
+    if (fg.getAttribute('src') === url) fg.onload();   // gleiches Bild (nur 1 Foto)
+    else fg.src = url;
   }
 
   // ---------- Ayah / Spruch des Tages ----------
