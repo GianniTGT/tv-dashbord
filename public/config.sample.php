@@ -1,6 +1,9 @@
 <?php
 // Kopieren nach config.php und anpassen. config.php NICHT ins Repo committen.
 return [
+    // Sprache der TV-Anzeige: 'de' = Deutsch, 'sq' = Shqip (Albanisch)
+    'lang' => 'de',
+
     // Geheimes Passwort für die Handy-Bearbeitungsseite (admin.html)
     'token' => 'HIER-EIN-LANGES-PASSWORT',
 

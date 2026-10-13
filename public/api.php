@@ -45,7 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'lat' => $cfg['lat'], 'lon' => $cfg['lon'], 'place' => $cfg['place'],
         'night_from' => $cfg['night_from'], 'night_to' => $cfg['night_to'],
         'family' => $cfg['family'] ?? [],
-        'photo_seconds' => (int)($cfg['photo_seconds'] ?? 60),
+        'photo_seconds' => (int)($cfg['photo_seconds'] ?? 20),
+        'lang' => in_array($cfg['lang'] ?? 'de', ['de', 'sq'], true) ? $cfg['lang'] : 'de',
     ];
     $m = media_load(__DIR__ . '/data');
     $d['photos'] = array_map(fn($p) => ['id' => $p['id'], 'src' => 'media.php?f=' . $p['file']], $m['photos']);

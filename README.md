@@ -35,6 +35,10 @@ webos/                        → LG-App-Daten (appinfo.json, Icons)
 - **Ayah des Tages:** Jeden Tag ein anderer Vers aus einer Auswahl von 62 aufbauenden Versen (Geduld, Vertrauen, Dankbarkeit, Familie, Bittgebete). Angezeigt werden Arabisch und Deutsch (Bubenheim/Elyas). Albanisch lässt sich in `config.php` mit `'ayah_translations' => ['de.bubenheim', 'sq.ahmeti']` dazuschalten.
   Wer auf dem Handy einen **eigenen Spruch** setzt, ersetzt damit die Ayah, bis er wieder gelöscht wird.
 
+## Sprache
+
+In `config.php`: `'lang' => 'sq'` für Shqip (Albanisch) oder `'de'` für Deutsch. Für die Ayah passend `'ayah_translations' => ['sq.ahmeti']` (Albanisch), `['de.bubenheim']` (Deutsch) oder beide.
+
 ## 1. Server einrichten (Plesk / Hosttech)
 
 1. Eine Subdomain anlegen, z. B. `tv.deine-domain.ch` (PHP 8, **mit SSL**).

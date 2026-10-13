@@ -29,10 +29,10 @@ $ref = $verses[$day % count($verses)];
 
 $dir = __DIR__ . '/data/ayah';
 @mkdir($dir, 0755, true);
-$cache = $dir . '/' . $today->format('Y-m-d') . '.json';
-if (is_file($cache)) { readfile($cache); exit; }
-
 $tr = $cfg['ayah_translations'] ?? ['de.bubenheim'];
+// Cache pro Tag UND Übersetzung – eine neue Sprache gilt sofort, nicht erst morgen
+$cache = $dir . '/' . $today->format('Y-m-d') . '_' . preg_replace('/[^a-z.,]/', '', implode(',', $tr)) . '.json';
+if (is_file($cache)) { readfile($cache); exit; }
 $editions = implode(',', array_merge(['quran-simple'], $tr));
 $url = "https://api.alquran.cloud/v1/ayah/$ref/editions/$editions";
 $raw = @file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 10]]));

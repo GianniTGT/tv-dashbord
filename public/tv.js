@@ -7,9 +7,70 @@
   var KEY = encodeURIComponent(window.DASH_KEY || '');
   var state = { data: null, cal: [], settings: null, lastOk: 0 };
 
-  var WD = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-  var WD_S = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-  var MON = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+  // ---------- Sprachen: 'de' Deutsch, 'sq' Albanisch (Einstellung 'lang' in config.php) ----------
+  var I18N = {
+    de: {
+      WD: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+      WD_S: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+      MON: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+      date: function (wd, d, m, y) { return wd + ', ' + d + '. ' + m + (y ? ' ' + y : ''); },
+      h_family: 'Familien-Pinnwand', h_agenda: 'Termine', h_important: 'Wichtig',
+      noNotes: 'Keine Nachrichten', noEvents: 'Keine Termine in den nächsten 7 Tagen', noImportant: 'Nichts Dringendes',
+      forAll: 'Für alle', forX: function (n) { return 'Für ' + n; }, onlyToday: '· nur heute',
+      today: 'Heute', tomorrow: 'Morgen', allDay: 'ganztags',
+      overdue: function (n) { return 'seit ' + n + (n === 1 ? ' Tag' : ' Tagen') + ' fällig'; },
+      dueToday: 'heute', dueTomorrow: 'morgen', dueIn: function (n) { return 'in ' + n + ' Tagen'; },
+      more: function (n) { return '+ ' + n + ' weitere'; },
+      isNew: 'NEU', voice: 'Sprachnachricht', family: 'Familie',
+      pressOk: 'OK drücken zum Abspielen', choose: 'mit ▲▼ auswählen',
+      quote: 'SPRUCH DES TAGES', ayahRef: function (s, n, v) { return 'Sure ' + s + ' · ' + n + ' · Vers ' + v; },
+      connecting: 'Verbinde …', offline: function (m) { return 'Offline seit ' + m + ' Min.'; },
+      noPhotos: 'Fotos über das Handy hinzufügen',
+      W: { 0: 'Klar', 1: 'Überwiegend klar', 2: 'Teilweise bewölkt', 3: 'Bedeckt', 45: 'Nebel', 48: 'Nebel',
+        51: 'Nieselregen', 53: 'Nieselregen', 55: 'Nieselregen', 61: 'Leichter Regen', 63: 'Regen', 65: 'Starker Regen',
+        66: 'Eisregen', 67: 'Eisregen', 71: 'Leichter Schnee', 73: 'Schnee', 75: 'Starker Schnee', 77: 'Schneegriesel',
+        80: 'Regenschauer', 81: 'Regenschauer', 82: 'Heftige Schauer', 85: 'Schneeschauer', 86: 'Schneeschauer',
+        95: 'Gewitter', 96: 'Gewitter mit Hagel', 99: 'Gewitter mit Hagel' }
+    },
+    sq: {
+      WD: ['E diel', 'E hënë', 'E martë', 'E mërkurë', 'E enjte', 'E premte', 'E shtunë'],
+      WD_S: ['Die', 'Hën', 'Mar', 'Mër', 'Enj', 'Pre', 'Sht'],
+      MON: ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'],
+      date: function (wd, d, m, y) { return wd + ', ' + d + ' ' + m + (y ? ' ' + y : ''); },
+      h_family: 'Tabela e familjes', h_agenda: 'Takimet', h_important: 'E rëndësishme',
+      noNotes: 'Asnjë mesazh', noEvents: 'Asnjë takim në 7 ditët e ardhshme', noImportant: 'Asgjë urgjente',
+      forAll: 'Për të gjithë', forX: function (n) { return 'Për ' + n; }, onlyToday: '· vetëm sot',
+      today: 'Sot', tomorrow: 'Nesër', allDay: 'gjithë ditën',
+      overdue: function (n) { return 'vonuar ' + n + (n === 1 ? ' ditë' : ' ditë'); },
+      dueToday: 'sot', dueTomorrow: 'nesër', dueIn: function (n) { return 'pas ' + n + ' ditësh'; },
+      more: function (n) { return '+ ' + n + ' të tjera'; },
+      isNew: 'E RE', voice: 'Mesazh zanor', family: 'Familja',
+      pressOk: 'Shtyp OK për ta dëgjuar', choose: 'zgjidh me ▲▼',
+      quote: 'THËNIA E DITËS', ayahRef: function (s, n, v) { return 'Sureja ' + s + ' · ' + n + ' · Ajeti ' + v; },
+      connecting: 'Duke u lidhur …', offline: function (m) { return 'Pa lidhje prej ' + m + ' min.'; },
+      noPhotos: 'Shto foto nga telefoni',
+      W: { 0: 'Kthjellët', 1: 'Kryesisht kthjellët', 2: 'Pjesërisht me re', 3: 'Vranët', 45: 'Mjegull', 48: 'Mjegull',
+        51: 'Shi i imët', 53: 'Shi i imët', 55: 'Shi i imët', 61: 'Shi i lehtë', 63: 'Shi', 65: 'Shi i fortë',
+        66: 'Shi i ngrirë', 67: 'Shi i ngrirë', 71: 'Borë e lehtë', 73: 'Borë', 75: 'Borë e dendur', 77: 'Kokrriza bore',
+        80: 'Rrebesh shiu', 81: 'Rrebesh shiu', 82: 'Rrebesh i fortë', 85: 'Rrebesh bore', 86: 'Rrebesh bore',
+        95: 'Stuhi', 96: 'Stuhi me breshër', 99: 'Stuhi me breshër' }
+    }
+  };
+  var L = I18N.de;
+  function setLang(code) {
+    var nl = I18N[code] || I18N.de;
+    if (nl === L) return;
+    L = nl;
+    document.documentElement.lang = code;
+    lastMinute = -1;            // Datum sofort neu schreiben
+  }
+  function applyStaticTexts() {
+    var hs = document.querySelectorAll('.panel h2');
+    if (hs[0]) hs[0].textContent = L.h_family;
+    if (hs[1]) hs[1].textContent = L.h_agenda;
+    if (hs[2]) hs[2].textContent = L.h_important;
+    $('photoEmpty').textContent = L.noPhotos;
+  }
 
   function $(id) { return document.getElementById(id); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -52,7 +113,7 @@
     var t = pad(now.getHours()) + ':' + pad(now.getMinutes());
     $('clock').textContent = t;
     $('nightclock').textContent = t;
-    $('date').textContent = WD[now.getDay()] + ', ' + now.getDate() + '. ' + MON[now.getMonth()] + ' ' + now.getFullYear();
+    $('date').textContent = L.date(L.WD[now.getDay()], now.getDate(), L.MON[now.getMonth()], now.getFullYear());
 
     var night = isNight(now);
     $('night').classList.toggle('hidden', !night);
@@ -82,6 +143,10 @@
       if (err) return showStatus();
       state.data = d;
       state.settings = d.settings;
+      var langChanged = (I18N[d.settings.lang] || I18N.de) !== L;
+      setLang(d.settings.lang);
+      applyStaticTexts();
+      if (langChanged) { tick(); loadWeather(); }
       state.lastOk = Date.now();
       render();
       setPhotos(d.photos || []);
@@ -98,13 +163,6 @@
     });
   }
 
-  var WCODE = {
-    0: 'Klar', 1: 'Überwiegend klar', 2: 'Teilweise bewölkt', 3: 'Bedeckt', 45: 'Nebel', 48: 'Nebel',
-    51: 'Nieselregen', 53: 'Nieselregen', 55: 'Nieselregen', 61: 'Leichter Regen', 63: 'Regen', 65: 'Starker Regen',
-    66: 'Eisregen', 67: 'Eisregen', 71: 'Leichter Schnee', 73: 'Schnee', 75: 'Starker Schnee', 77: 'Schneegriesel',
-    80: 'Regenschauer', 81: 'Regenschauer', 82: 'Heftige Schauer', 85: 'Schneeschauer', 86: 'Schneeschauer',
-    95: 'Gewitter', 96: 'Gewitter mit Hagel', 99: 'Gewitter mit Hagel'
-  };
   function loadWeather() {
     var s = state.settings;
     if (!s) return setTimeout(loadWeather, 5000);
@@ -115,11 +173,11 @@
       var box = $('weather');
       box.innerHTML = '';
       box.appendChild(el('div', 'now', Math.round(w.current_weather.temperature) + '°'));
-      box.appendChild(el('div', 'desc', (s.place ? s.place + ' · ' : '') + (WCODE[w.current_weather.weathercode] || '')));
+      box.appendChild(el('div', 'desc', (s.place ? s.place + ' · ' : '') + (L.W[w.current_weather.weathercode] || '')));
       var days = el('div', 'days');
       for (var i = 1; i < w.daily.time.length; i++) {
         var d = parseYmd(w.daily.time[i]);
-        days.appendChild(el('span', null, WD_S[d.getDay()] + ' ' + Math.round(w.daily.temperature_2m_min[i]) + '/' + Math.round(w.daily.temperature_2m_max[i]) + '°'));
+        days.appendChild(el('span', null, L.WD_S[d.getDay()] + ' ' + Math.round(w.daily.temperature_2m_min[i]) + '/' + Math.round(w.daily.temperature_2m_max[i]) + '°'));
       }
       box.appendChild(days);
     });
@@ -146,14 +204,14 @@
     var notes = $('notes');
     notes.innerHTML = '';
     var list = (d.notes || []).filter(function (n) { return !n.until || n.until >= today; });
-    if (!list.length) notes.appendChild(el('div', 'empty', 'Keine Nachrichten'));
+    if (!list.length) notes.appendChild(el('div', 'empty', L.noNotes));
     list.slice(0, 8).forEach(function (n) {
       var c = memberColor(n.to || 'Alle');
       var box = el('div', 'note');
       box.style.borderLeftColor = c;
-      var to = el('div', 'to', n.to && n.to !== 'Alle' ? 'Für ' + n.to : 'Für alle');
+      var to = el('div', 'to', n.to && n.to !== 'Alle' ? L.forX(n.to) : L.forAll);
       to.style.color = c;
-      if (n.until === today) to.appendChild(el('span', 'today', '· nur heute'));
+      if (n.until === today) to.appendChild(el('span', 'today', L.onlyToday));
       box.appendChild(to);
       box.appendChild(el('div', 'text', n.text));
       if (n.from) box.appendChild(el('div', 'from', '– ' + n.from));
@@ -170,14 +228,14 @@
 
     var ag = $('agenda');
     ag.innerHTML = '';
-    if (!evs.length) ag.appendChild(el('div', 'empty', 'Keine Termine in den nächsten 7 Tagen'));
+    if (!evs.length) ag.appendChild(el('div', 'empty', L.noEvents));
     var lines = 0, curDay = null, dayBox = null;
     for (var i = 0; i < evs.length && lines < 13; i++) {
       var e = evs[i];
       if (e.date !== curDay) {
         curDay = e.date;
         var diff = daysBetween(today, e.date), dt = parseYmd(e.date);
-        var label = diff === 0 ? 'Heute' : diff === 1 ? 'Morgen' : WD[dt.getDay()] + ', ' + dt.getDate() + '. ' + MON[dt.getMonth()];
+        var label = diff === 0 ? L.today : diff === 1 ? L.tomorrow : L.date(L.WD[dt.getDay()], dt.getDate(), L.MON[dt.getMonth()]);
         dayBox = el('div', 'day' + (diff === 0 ? ' is-today' : ''));
         dayBox.appendChild(el('div', 'label', label));
         ag.appendChild(dayBox);
@@ -192,7 +250,7 @@
       var dot = el('span', 'dot');
       dot.style.background = e.color || '#7aa2f7';
       row.appendChild(dot);
-      row.appendChild(el('span', 'time' + (e.time ? '' : ' allday'), e.time || 'ganztags'));
+      row.appendChild(el('span', 'time' + (e.time ? '' : ' allday'), e.time || L.allDay));
       row.appendChild(el('span', 'title', e.title));
       dayBox.appendChild(row);
       lines++;
@@ -206,16 +264,16 @@
     var imp = $('important');
     imp.innerHTML = '';
     var items = (d.important || []).slice().sort(function (a, b) { return (a.date || '9999').localeCompare(b.date || '9999'); });
-    if (!items.length) imp.appendChild(el('div', 'empty', 'Nichts Dringendes'));
+    if (!items.length) imp.appendChild(el('div', 'empty', L.noImportant));
     items.slice(0, 7).forEach(function (it) {
       var box = el('div', 'imp');
       box.appendChild(el('div', 'text', it.text));
       if (it.date) {
         var diff = daysBetween(today, it.date), txt, cls = 'when';
-        if (diff < 0) { txt = 'seit ' + (-diff) + (diff === -1 ? ' Tag' : ' Tagen') + ' fällig'; cls += ' over'; }
-        else if (diff === 0) { txt = 'heute'; cls += ' soon'; }
-        else if (diff === 1) { txt = 'morgen'; cls += ' soon'; }
-        else { txt = 'in ' + diff + ' Tagen'; if (diff <= 3) cls += ' soon'; }
+        if (diff < 0) { txt = L.overdue(-diff); cls += ' over'; }
+        else if (diff === 0) { txt = L.dueToday; cls += ' soon'; }
+        else if (diff === 1) { txt = L.dueTomorrow; cls += ' soon'; }
+        else { txt = L.dueIn(diff); if (diff <= 3) cls += ' soon'; }
         box.appendChild(el('div', cls, txt));
       }
       imp.appendChild(box);
@@ -235,7 +293,7 @@
       if (parent !== box && !parent.querySelector(itemSel)) box.removeChild(parent); // leerer Tag
       hidden++;
       if (!more) { more = el('div', 'more'); box.appendChild(more); }
-      more.textContent = '+ ' + hidden + ' weitere';
+      more.textContent = L.more(hidden);
     }
   }
 
@@ -259,13 +317,13 @@
       row.id = 'v-' + a.id;
       row.appendChild(el('div', 'play', a.id === playingId && player && !player.paused ? '❚❚' : '▶'));
       var info = el('div', 'info');
-      var who = el('div', 'who', '🎙 ' + (a.from || 'Familie') + (a.to && a.to !== 'Alle' ? ' → ' + a.to : ''));
+      var who = el('div', 'who', '🎙 ' + (a.from || L.family) + (a.to && a.to !== 'Alle' ? ' → ' + a.to : ''));
       who.style.color = c;
-      if (played.indexOf(a.id) < 0) who.appendChild(el('span', 'new', 'NEU'));
+      if (played.indexOf(a.id) < 0) who.appendChild(el('span', 'new', L.isNew));
       info.appendChild(who);
-      info.appendChild(el('div', 'title', a.title || 'Sprachnachricht'));
+      info.appendChild(el('div', 'title', a.title || L.voice));
       var mins = a.duration ? ' · ' + Math.floor(a.duration / 60) + ':' + pad(a.duration % 60) : '';
-      info.appendChild(el('div', 'hint', (i === voiceSel ? 'OK drücken zum Abspielen' : 'mit ▲▼ auswählen') + mins));
+      info.appendChild(el('div', 'hint', (i === voiceSel ? L.pressOk : L.choose) + mins));
       var bar = el('div', 'bar'); bar.appendChild(el('span'));
       info.appendChild(bar);
       row.appendChild(info);
@@ -364,11 +422,11 @@
     if (d.quote) {
       ar.textContent = '';
       tr.textContent = '«' + d.quote + '»';
-      ref.textContent = 'SPRUCH DES TAGES';
+      ref.textContent = L.quote;
     } else if (ayahData) {
       ar.textContent = ayahData.arabic;
       tr.textContent = ayahData.translations.map(function (t) { return t.text; }).join('  ·  ');
-      ref.textContent = 'Sure ' + ayahData.surah + ' · ' + ayahData.surah_name + ' · Vers ' + ayahData.ayah;
+      ref.textContent = L.ayahRef(ayahData.surah, ayahData.surah_name, ayahData.ayah);
     } else { box.classList.add('hidden'); return; }
     box.classList.remove('hidden');
     ar.classList.toggle('hidden', !ar.textContent);
@@ -383,9 +441,9 @@
 
   function showStatus() {
     var s = $('status');
-    if (!state.lastOk) { s.textContent = 'Verbinde …'; return; }
+    if (!state.lastOk) { s.textContent = L.connecting; return; }
     var age = Math.round((Date.now() - state.lastOk) / 60000);
-    s.textContent = age > 2 ? 'Offline seit ' + age + ' Min.' : '';
+    s.textContent = age > 2 ? L.offline(age) : '';
   }
 
   // ---------- Start ----------
