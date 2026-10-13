@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Familien Dashboard</title>
+<link rel="stylesheet" href="tv.css">
+</head>
+<body>
+<div id="stage">
+  <header class="top">
+    <div class="clockbox">
+      <div id="clock" class="clock">--:--</div>
+      <div id="date" class="date"></div>
+    </div>
+    <div id="message" class="message hidden"></div>
+    <div id="weather" class="weather"></div>
+  </header>
+
+  <main class="grid">
+    <section class="panel family">
+      <h2>Familien-Pinnwand</h2>
+      <div id="notes" class="notes"></div>
+    </section>
+
+    <section class="panel agenda">
+      <h2>Termine</h2>
+      <div id="agenda"></div>
+    </section>
+
+    <section class="panel important">
+      <h2>Wichtig</h2>
+      <div id="important"></div>
+    </section>
+  </main>
+
+  <footer id="status" class="status"></footer>
+</div>
+
+<div id="night" class="night hidden"><div id="nightclock">--:--</div></div>
+
+<script src="config.js"></script>
+<script src="tv.js"></script>
+</body>
+</html>

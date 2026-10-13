@@ -1,0 +1,49 @@
+name: LG webOS App bauen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: LG webOS CLI installieren
+        run: npm install -g @webos-tools/cli
+
+      - name: App-Ordner zusammenstellen
+        env:
+          # In GitHub: Settings → Secrets and variables → Actions → Variables → DASH_API_URL
+          # z. B. https://dashboard.deine-domain.ch/   (mit / am Ende)
+          DASH_API_URL: ${{ vars.DASH_API_URL }}
+          # Secrets → DASH_KEY  (gleicher Wert wie 'view_key' in config.php)
+          DASH_KEY: ${{ secrets.DASH_KEY }}
+        run: |
+          if [ -z "$DASH_API_URL" ]; then
+            echo "::error::Repository-Variable DASH_API_URL fehlt (Adresse deines Servers)."
+            exit 1
+          fi
+          mkdir -p build
+          cp public/index.html public/tv.css public/tv.js build/
+          cp webos/appinfo.json webos/icon.png webos/largeIcon.png build/
+          printf "window.DASH_API = '%s';\nwindow.DASH_KEY = '%s';\n" "$DASH_API_URL" "$DASH_KEY" > build/config.js
+          # Versionsnummer automatisch hochzählen (1.0.<Build-Nr>)
+          sed -i "s/\"version\": \"[0-9.]*\"/\"version\": \"1.0.${GITHUB_RUN_NUMBER}\"/" build/appinfo.json
+
+      - name: .ipk packen
+        run: |
+          mkdir -p dist
+          ares-package build -o dist --no-minify
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lg-webos-app
+          path: dist/*.ipk

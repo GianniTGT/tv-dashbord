@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>TV Pinnwand</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#151517; --line:#26262a; --text:#e6e6e6; --muted:#8a8a90; --accent:#7aa2f7; --red:#f7768e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.4 -apple-system, system-ui, Roboto, sans-serif; padding:16px 16px 60px; max-width:640px; margin-inline:auto; }
+  h1 { font-size:22px; margin:6px 0 18px; display:flex; justify-content:space-between; align-items:center; }
+  h1 small { font-size:13px; color:var(--muted); font-weight:400; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin:28px 0 10px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  input, select, textarea, button { font:inherit; color:var(--text); background:#0f0f11; border:1px solid var(--line); border-radius:10px; padding:11px 12px; width:100%; }
+  textarea { resize:vertical; min-height:70px; }
+  button { background:var(--accent); color:#0b0b0c; border:0; font-weight:600; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); width:auto; padding:6px 10px; font-size:14px; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  label.chk { display:flex; align-items:center; gap:8px; color:var(--muted); margin:10px 0; }
+  label.chk input { width:auto; }
+  .list { margin-top:12px; }
+  .item { display:flex; gap:10px; align-items:flex-start; padding:12px 0; border-top:1px solid var(--line); }
+  .item .body { flex:1; min-width:0; }
+  .item .meta { font-size:13px; color:var(--muted); }
+  .item .bar { width:4px; align-self:stretch; border-radius:2px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .chip { padding:7px 12px; border-radius:20px; border:1px solid var(--line); color:var(--muted); width:auto; background:transparent; font-weight:500; }
+  .chip.on { color:#0b0b0c; }
+  .toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:#222; padding:10px 18px; border-radius:20px; font-size:14px; opacity:0; transition:opacity .3s; }
+  .toast.show { opacity:1; }
+  .hidden { display:none; }
+  .empty { color:var(--muted); font-size:14px; padding:10px 0 0; }
+</style>
+</head>
+<body>
+
+<div id="login" class="hidden">
+  <h1>TV Pinnwand</h1>
+  <div class="card">
+    <p style="margin-top:0;color:var(--muted)">Familien-Passwort eingeben (einmalig pro Handy).</p>
+    <input id="pw" type="password" placeholder="Passwort" autocomplete="current-password">
+    <div style="height:10px"></div>
+    <button id="pwBtn">Anmelden</button>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <h1>TV Pinnwand <small id="who"></small></h1>
+
+  <h2>Nachricht an die Familie</h2>
+  <div class="card">
+    <div style="color:var(--muted);font-size:14px;margin-bottom:6px">Für wen?</div>
+    <div class="chips" id="toChips"></div>
+    <textarea id="noteText" placeholder="z. B. Pass auf die Katze auf 🐱"></textarea>
+    <label class="chk"><input type="checkbox" id="noteToday" checked> Nur heute anzeigen</label>
+    <button id="noteAdd">Auf den TV schicken</button>
+    <div class="list" id="noteList"></div>
+  </div>
+
+  <h2>Termine (zusätzlich zum Kalender)</h2>
+  <div class="card">
+    <input id="evTitle" placeholder="z. B. Erina Zahnarzt" style="margin-bottom:10px">
+    <div class="row">
+      <input id="evDate" type="date">
+      <input id="evTime" type="time">
+    </div>
+    <button id="evAdd">Termin hinzufügen</button>
+    <div class="list" id="evList"></div>
+  </div>
+
+  <h2>Wichtig</h2>
+  <div class="card">
+    <input id="impText" placeholder="z. B. Steuererklärung" style="margin-bottom:10px">
+    <div class="row">
+      <input id="impDate" type="date">
+      <div style="color:var(--muted);font-size:13px;align-self:center">Fällig am (optional)</div>
+    </div>
+    <button id="impAdd">Hinzufügen</button>
+    <div class="list" id="impList"></div>
+  </div>
+
+  <h2>Banner oben (optional)</h2>
+  <div class="card">
+    <input id="msg" placeholder="z. B. Heute Abend Besuch von Oma">
+    <div style="height:10px"></div>
+    <div class="row">
+      <button id="msgSave">Banner setzen</button>
+      <button id="msgClear" class="ghost" style="width:100%">Banner entfernen</button>
+    </div>
+  </div>
+
+  <h2>Ich bin</h2>
+  <div class="card">
+    <div class="chips" id="meChips"></div>
+    <button class="ghost" id="logout">Abmelden</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+let data = null, family = [], toSel = 'Alle';
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const colorOf = n => (family.find(f => f.name === n) || {}).color || '#9aa5ce';
+const fmtDate = s => { if (!s) return ''; const [y,m,d] = s.split('-'); return d + '.' + m + '.' + y; };
+
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('show'); setTimeout(() => e.classList.remove('show'), 1800); }
+
+async function load() {
+  const r = await fetch('api.php?_=' + Date.now(), { headers: { 'X-Token': store.get('dash_token') || '' } });
+  if (r.status === 403) { store.del('dash_token'); throw new Error('Passwort falsch'); }
+  const d = await r.json();
+  if (d.error) throw new Error(d.error);
+  family = d.settings.family || [];
+  return d;
+}
+
+// Immer zuerst neuesten Stand holen, dann ändern, dann speichern –
+// so überschreiben sich zwei Handys nicht gegenseitig.
+async function mutate(fn, okText) {
+  try {
+    const d = await load();
+    fn(d);
+    const r = await fetch('api.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Token': store.get('dash_token') || '' },
+      body: JSON.stringify(d),
+    });
+    if (r.status === 401) { store.del('dash_token'); showLogin(); toast('Passwort falsch'); return; }
+    if (!r.ok) throw new Error('Fehler ' + r.status);
+    data = d;
+    render();
+    if (okText) toast(okText);
+  } catch (e) { toast('Nicht gespeichert: ' + e.message); }
+}
+
+function chips(box, selected, onPick, includeAll) {
+  box.innerHTML = '';
+  family.filter(f => includeAll || f.name !== 'Alle').forEach(f => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (f.name === selected ? ' on' : '');
+    if (f.name === selected) b.style.background = f.color;
+    b.textContent = f.name;
+    b.onclick = () => onPick(f.name);
+    box.appendChild(b);
+  });
+}
+
+function item(color, text, meta, onDel) {
+  const row = document.createElement('div'); row.className = 'item';
+  const bar = document.createElement('div'); bar.className = 'bar'; bar.style.background = color;
+  const body = document.createElement('div'); body.className = 'body';
+  const t = document.createElement('div'); t.textContent = text;
+  const m = document.createElement('div'); m.className = 'meta'; m.textContent = meta;
+  body.append(t, m);
+  const del = document.createElement('button'); del.className = 'ghost'; del.textContent = 'Löschen'; del.onclick = onDel;
+  row.append(bar, body, del);
+  return row;
+}
+
+function render() {
+  const me = store.get('dash_me') || '';
+  $('who').textContent = me ? 'als ' + me : '';
+  chips($('toChips'), toSel, n => { toSel = n; render(); }, true);
+  chips($('meChips'), me, n => { store.set('dash_me', n); render(); }, false);
+
+  const t = today();
+  const nl = $('noteList'); nl.innerHTML = '';
+  const notes = (data.notes || []).filter(n => !n.until || n.until >= t);
+  if (!notes.length) nl.innerHTML = '<div class="empty">Keine Nachrichten auf dem TV</div>';
+  notes.forEach(n => nl.appendChild(item(colorOf(n.to || 'Alle'), n.text,
+    'Für ' + (n.to || 'Alle') + (n.from ? ' · von ' + n.from : '') + (n.until ? ' · nur heute' : ''),
+    () => mutate(d => { d.notes = d.notes.filter(x => x.id !== n.id); }, 'Gelöscht'))));
+
+  const el = $('evList'); el.innerHTML = '';
+  (data.events || []).filter(e => e.date >= t).sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time))
+    .forEach(e => el.appendChild(item('#e0af68', e.title, fmtDate(e.date) + (e.time ? ' · ' + e.time : ''),
+      () => mutate(d => { d.events = d.events.filter(x => x.id !== e.id); }, 'Gelöscht'))));
+
+  const il = $('impList'); il.innerHTML = '';
+  (data.important || []).forEach(i => il.appendChild(item('#f7768e', i.text, i.date ? 'bis ' + fmtDate(i.date) : '',
+    () => mutate(d => { d.important = d.important.filter(x => x.id !== i.id); }, 'Erledigt'))));
+
+  $('msg').value = data.message || '';
+}
+
+$('noteAdd').onclick = () => {
+  const text = $('noteText').value.trim();
+  if (!text) return toast('Bitte Text eingeben');
+  const note = { id: uid(), to: toSel, from: store.get('dash_me') || '', text, until: $('noteToday').checked ? today() : '' };
+  mutate(d => { d.notes.unshift(note); }, 'Auf dem TV ✓');
+  $('noteText').value = '';
+};
+$('evAdd').onclick = () => {
+  const title = $('evTitle').value.trim(), date = $('evDate').value;
+  if (!title || !date) return toast('Titel und Datum nötig');
+  mutate(d => { d.events.push({ id: uid(), title, date, time: $('evTime').value }); }, 'Termin gespeichert');
+  $('evTitle').value = ''; $('evTime').value = '';
+};
+$('impAdd').onclick = () => {
+  const text = $('impText').value.trim();
+  if (!text) return toast('Bitte Text eingeben');
+  mutate(d => { d.important.push({ id: uid(), text, date: $('impDate').value }); }, 'Gespeichert');
+  $('impText').value = ''; $('impDate').value = '';
+};
+$('msgSave').onclick = () => { const v = $('msg').value.trim(); mutate(d => { d.message = v; }, 'Banner gesetzt'); };
+$('msgClear').onclick = () => mutate(d => { d.message = ''; }, 'Banner entfernt');
+$('logout').onclick = () => { store.del('dash_token'); showLogin(); };
+
+function showLogin() { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+$('pwBtn').onclick = () => { store.set('dash_token', $('pw').value); start(); };
+
+async function start() {
+  if (!store.get('dash_token')) return showLogin();
+  try {
+    data = await load();
+    $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+    $('evDate').value = today();
+    render();
+  } catch (e) { toast(e.message === 'Passwort falsch' ? 'Passwort falsch' : 'Server nicht erreichbar'); showLogin(); }
+}
+start();
+</script>
+</body>
+</html>
