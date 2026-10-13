@@ -413,7 +413,7 @@ async function start() {
     $('login').classList.add('hidden'); $('app').classList.remove('hidden');
     $('evDate').value = today();
     render();
-  } catch (e) { toast(e.message === 'Passwort falsch' ? 'Passwort falsch' : 'Server nicht erreichbar'); showLogin(); }
+  } catch (e) { toast(/Passwort|Fehlversuche|Zugriff/.test(e.message) ? e.message : 'Server nicht erreichbar'); showLogin(); }
 }
 start();
 </script>

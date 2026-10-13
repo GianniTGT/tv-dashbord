@@ -26,3 +26,31 @@ function media_update($base, callable $fn) {
     fclose($fp);
     return $m;
 }
+
+// Schutz gegen Passwort-Durchprobieren: max. 10 Fehlversuche pro Stunde und IP, 2 s Pause pro Fehlversuch
+function brute_file() { return __DIR__ . '/data/login-fails.json'; }
+function brute_blocked() {
+    $f = brute_file();
+    $d = is_file($f) ? (json_decode(file_get_contents($f), true) ?: []) : [];
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '?';
+    $list = array_filter($d[$ip] ?? [], fn($t) => $t > time() - 3600);
+    return count($list) >= 10;
+}
+function brute_fail() {
+    $f = brute_file();
+    @mkdir(dirname($f), 0755, true);
+    $d = is_file($f) ? (json_decode(file_get_contents($f), true) ?: []) : [];
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '?';
+    $d[$ip] = array_values(array_filter($d[$ip] ?? [], fn($t) => $t > time() - 3600));
+    $d[$ip][] = time();
+    foreach ($d as $k => $v) if (!$v || max($v) < time() - 3600) unset($d[$k]);   // aufräumen
+    file_put_contents($f, json_encode($d), LOCK_EX);
+    sleep(2);
+}
+// Prüft das Passwort aus dem Header X-Token; true wenn korrekt
+function token_ok($cfg) {
+    if (brute_blocked()) { http_response_code(429); header('Content-Type: application/json'); echo json_encode(['error' => 'Zu viele Fehlversuche – in einer Stunde wieder versuchen']); exit; }
+    $ok = hash_equals((string)$cfg['token'], (string)($_SERVER['HTTP_X_TOKEN'] ?? ''));
+    if (!$ok && ($_SERVER['HTTP_X_TOKEN'] ?? '') !== '') brute_fail();
+    return $ok;
+}

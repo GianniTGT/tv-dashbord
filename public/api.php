@@ -38,7 +38,7 @@ function load($file, $empty) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $viewKey = $cfg['view_key'] ?? '';
     $okView = $viewKey === '' || hash_equals($viewKey, (string)($_GET['k'] ?? ''))
-              || hash_equals($cfg['token'], (string)($_SERVER['HTTP_X_TOKEN'] ?? ''));
+              || (($_SERVER['HTTP_X_TOKEN'] ?? '') !== '' && token_ok($cfg));
     if (!$okView) { http_response_code(403); echo json_encode(['error' => 'Kein Zugriff']); exit; }
     $d = load($dataFile, $empty);
     $d['settings'] = [
@@ -57,8 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $token = $_SERVER['HTTP_X_TOKEN'] ?? '';
-    if (!hash_equals($cfg['token'], $token)) {
+    if (!token_ok($cfg)) {
         http_response_code(401);
         echo json_encode(['error' => 'Falsches Passwort']);
         exit;

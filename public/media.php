@@ -29,7 +29,7 @@ function fail($code, $msg) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $viewKey = $cfg['view_key'] ?? '';
     $ok = ($viewKey === '' || hash_equals($viewKey, (string)($_GET['k'] ?? '')))
-          || hash_equals($cfg['token'], (string)($_GET['t'] ?? ''));
+          || (($_GET['t'] ?? '') !== '' && (function () use ($cfg) { $_SERVER['HTTP_X_TOKEN'] = (string)$_GET['t']; return token_ok($cfg); })());
     if (!$ok) fail(403, 'Kein Zugriff');
 
     $f = (string)($_GET['f'] ?? '');
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 // ---------- Hochladen / Löschen ----------
 header('Content-Type: application/json; charset=utf-8');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail(405, 'Methode nicht erlaubt');
-if (!hash_equals($cfg['token'], (string)($_SERVER['HTTP_X_TOKEN'] ?? ''))) fail(401, 'Falsches Passwort');
+if (!token_ok($cfg)) fail(401, 'Falsches Passwort');
 
 $action = $_POST['action'] ?? '';
 $clean = fn($s, $max) => mb_substr(trim(strip_tags((string)$s)), 0, $max);
