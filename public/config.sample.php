@@ -28,6 +28,16 @@ return [
     'lon' => 7.447,
     'place' => 'Bern',
 
+    // Fotos: Wechsel alle X Sekunden, maximal so viele Fotos speichern (älteste fallen weg)
+    'photo_seconds' => 60,
+    'max_photos' => 300,
+    // Sprachnachrichten: maximal so viele behalten
+    'max_audio' => 20,
+
+    // Ayah des Tages: Übersetzung (de.bubenheim = Deutsch, sq.ahmeti = Albanisch, en.sahih = Englisch)
+    // Mehrere möglich, z. B. ['de.bubenheim', 'sq.ahmeti']
+    'ayah_translations' => ['de.bubenheim'],
+
     // Nachtmodus (OLED-Schutz): Bildschirm fast schwarz in diesem Zeitraum
     'night_from' => '23:00',
     'night_to'   => '06:00',

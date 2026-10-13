@@ -84,6 +84,8 @@
       state.settings = d.settings;
       state.lastOk = Date.now();
       render();
+      setPhotos(d.photos || []);
+      renderAyah();
       showStatus();
     });
   }
@@ -181,7 +183,12 @@
         ag.appendChild(dayBox);
         lines++;
       }
-      var row = el('div', 'ev');
+      var past = false;
+      if (e.date === today && e.time) {
+        var now = new Date(), tm = minutes(e.time);
+        past = now.getHours() * 60 + now.getMinutes() > tm + 30;   // 30 Min. nach Beginn ausgrauen
+      }
+      var row = el('div', 'ev' + (past ? ' past' : ''));
       var dot = el('span', 'dot');
       dot.style.background = e.color || '#7aa2f7';
       row.appendChild(dot);
@@ -191,6 +198,7 @@
       lines++;
     }
 
+    renderVoice();
     fit('notes', '.note');
     fit('agenda', '.ev');
 
@@ -231,6 +239,144 @@
     }
   }
 
+  function mediaUrl(src) { return API + src + '&k=' + KEY; }
+  function storeGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  function storeSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+  // ---------- Sprachnachrichten (Fernbedienung: ▲▼ wählen, OK abspielen/pausieren) ----------
+  var player = null, playingId = null, voiceSel = 0, voiceList = [];
+  var played = storeGet('played') || [];
+
+  function renderVoice() {
+    var d = state.data, box = $('voice');
+    var weekAgo = Date.now() / 1000 - 7 * 86400;
+    voiceList = (d.audio || []).filter(function (a) { return a.created > weekAgo; }).slice(0, 2);
+    if (voiceSel >= voiceList.length) voiceSel = 0;
+    box.innerHTML = '';
+    voiceList.forEach(function (a, i) {
+      var c = memberColor(a.to || 'Alle');
+      var row = el('div', 'voice' + (i === voiceSel ? ' sel' : '') + (a.id === playingId ? ' playing' : ''));
+      row.id = 'v-' + a.id;
+      row.appendChild(el('div', 'play', a.id === playingId && player && !player.paused ? '❚❚' : '▶'));
+      var info = el('div', 'info');
+      var who = el('div', 'who', '🎙 ' + (a.from || 'Familie') + (a.to && a.to !== 'Alle' ? ' → ' + a.to : ''));
+      who.style.color = c;
+      if (played.indexOf(a.id) < 0) who.appendChild(el('span', 'new', 'NEU'));
+      info.appendChild(who);
+      info.appendChild(el('div', 'title', a.title || 'Sprachnachricht'));
+      var mins = a.duration ? ' · ' + Math.floor(a.duration / 60) + ':' + pad(a.duration % 60) : '';
+      info.appendChild(el('div', 'hint', (i === voiceSel ? 'OK drücken zum Abspielen' : 'mit ▲▼ auswählen') + mins));
+      var bar = el('div', 'bar'); bar.appendChild(el('span'));
+      info.appendChild(bar);
+      row.appendChild(info);
+      row.onclick = function () { voiceSel = i; toggleVoice(); };
+      box.appendChild(row);
+    });
+  }
+
+  function toggleVoice() {
+    var a = voiceList[voiceSel];
+    if (!a) return;
+    if (player && playingId === a.id) {
+      if (player.paused) player.play(); else player.pause();
+    } else {
+      if (player) player.pause();
+      player = new Audio(mediaUrl(a.src));
+      playingId = a.id;
+      player.ontimeupdate = function () {
+        var row = $('v-' + playingId);
+        if (row && player.duration) row.querySelector('.bar span').style.width = (100 * player.currentTime / player.duration) + '%';
+      };
+      player.onended = function () { playingId = null; renderVoice(); };
+      player.onplay = player.onpause = function () { renderVoice(); };
+      player.play();
+      if (played.indexOf(a.id) < 0) { played.push(a.id); played = played.slice(-50); storeSet('played', played); }
+    }
+    renderVoice();
+  }
+
+  document.addEventListener('keydown', function (e) {
+    var k = e.keyCode;
+    if (k === 38 || k === 40) {           // ▲ ▼
+      if (voiceList.length) { voiceSel = (voiceSel + (k === 40 ? 1 : voiceList.length - 1)) % voiceList.length; renderVoice(); }
+      e.preventDefault();
+    } else if (k === 13 || k === 415 || k === 19) {   // OK, Play, Pause
+      toggleVoice(); e.preventDefault();
+    } else if (k === 461 || k === 413) {  // Zurück, Stop
+      if (player) { player.pause(); player.currentTime = 0; playingId = null; renderVoice(); }
+      e.preventDefault();
+    }
+  });
+
+  // ---------- Foto-Ecke: Überblenden, zufällige Reihenfolge ----------
+  var photoQueue = [], photoKnown = '', photoTimer = null, photoFront = 'photoA';
+
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function setPhotos(list) {
+    var sig = list.map(function (p) { return p.id; }).join(',');
+    $('photoEmpty').classList.toggle('hidden', list.length > 0);
+    if (sig === photoKnown) return;
+    var isNew = list.length && list[0].id !== (photoKnown.split(',')[0]);
+    photoKnown = sig;
+    state.photos = list;
+    photoQueue = [];
+    if (!list.length) { $('photoA').className = ''; $('photoB').className = ''; return; }
+    if (isNew) photoQueue.push(list[0]);          // neu hochgeladenes Foto sofort zeigen
+    if (!photoTimer || isNew) nextPhoto();
+    if (!photoTimer) photoTimer = setInterval(nextPhoto, ((state.settings && state.settings.photo_seconds) || 60) * 1000);
+  }
+  function nextPhoto() {
+    var list = state.photos || [];
+    if (!list.length) return;
+    if (!photoQueue.length) photoQueue = shuffle(list.slice());
+    var p = photoQueue.shift();
+    var back = photoFront === 'photoA' ? 'photoB' : 'photoA';
+    var img = $(back);
+    img.onload = function () {
+      img.className = 'show';
+      $(photoFront).className = '';
+      photoFront = back;
+    };
+    img.src = mediaUrl(p.src);
+  }
+
+  // ---------- Ayah / Spruch des Tages ----------
+  var ayahData = null, ayahDay = '';
+  function loadAyah() {
+    var today = ymd(new Date());
+    if (ayahDay === today && ayahData) return;
+    getJSON(API + 'ayah.php?k=' + KEY, function (err, a) {
+      if (err || !a || !a.arabic) return;
+      ayahData = a; ayahDay = today;
+      renderAyah();
+    });
+  }
+  function renderAyah() {
+    var box = $('ayah'), d = state.data || {};
+    var ar = $('ayahArabic'), tr = $('ayahText'), ref = $('ayahRef');
+    if (d.quote) {
+      ar.textContent = '';
+      tr.textContent = '«' + d.quote + '»';
+      ref.textContent = 'SPRUCH DES TAGES';
+    } else if (ayahData) {
+      ar.textContent = ayahData.arabic;
+      tr.textContent = ayahData.translations.map(function (t) { return t.text; }).join('  ·  ');
+      ref.textContent = 'Sure ' + ayahData.surah + ' · ' + ayahData.surah_name + ' · Vers ' + ayahData.ayah;
+    } else { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    ar.classList.toggle('hidden', !ar.textContent);
+    // Schrift verkleinern, bis alles hineinpasst
+    var fa = 40, ft = 26;
+    ar.style.fontSize = fa + 'px'; tr.style.fontSize = ft + 'px';
+    while (box.scrollHeight > box.clientHeight + 1 && ft > 16) {
+      fa -= 2; ft -= 1.5;
+      ar.style.fontSize = fa + 'px'; tr.style.fontSize = ft + 'px';
+    }
+  }
+
   function showStatus() {
     var s = $('status');
     if (!state.lastOk) { s.textContent = 'Verbinde …'; return; }
@@ -243,11 +389,13 @@
   loadData();
   loadCalendar();
   setTimeout(loadWeather, 1500);
+  loadAyah();
 
   setInterval(tick, 1000);
   setInterval(loadData, 30 * 1000);          // Pinnwand/Notizen: alle 30 s
   setInterval(loadCalendar, 5 * 60 * 1000);  // Kalender: alle 5 min
   setInterval(loadWeather, 30 * 60 * 1000);  // Wetter: alle 30 min
+  setInterval(loadAyah, 30 * 60 * 1000);     // Ayah: neuer Tag → neuer Vers
   setInterval(pixelShift, 3 * 60 * 1000);    // OLED-Schutz
-  setInterval(function () { if (!isNight(new Date())) location.reload(); }, 6 * 60 * 60 * 1000); // Speicher frisch halten
+  setInterval(function () { if (!isNight(new Date()) && !(player && !player.paused)) location.reload(); }, 6 * 60 * 60 * 1000); // Speicher frisch halten
 })();

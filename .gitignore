@@ -3,3 +3,6 @@ public/data/*.json
 dist/
 build/
 node_modules/
+public/data/photos/
+public/data/audio/
+public/data/ayah/

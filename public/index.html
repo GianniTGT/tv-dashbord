@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=1920, initial-scale=1">
 <title>Familien Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tv.css">
 </head>
 <body>
@@ -20,6 +22,7 @@
   <main class="grid">
     <section class="panel family">
       <h2>Familien-Pinnwand</h2>
+      <div id="voice"></div>
       <div id="notes" class="notes"></div>
     </section>
 
@@ -28,13 +31,24 @@
       <div id="agenda"></div>
     </section>
 
-    <section class="panel important">
+    <section class="panel side">
+      <div id="photo" class="photo">
+        <img id="photoA" alt="">
+        <img id="photoB" alt="">
+        <div id="photoEmpty" class="photo-empty">Fotos über das Handy hinzufügen</div>
+      </div>
       <h2>Wichtig</h2>
       <div id="important"></div>
     </section>
   </main>
 
-  <footer id="status" class="status"></footer>
+  <footer id="ayah" class="ayah hidden">
+    <div id="ayahArabic" class="ar" dir="rtl" lang="ar"></div>
+    <div id="ayahText" class="tr"></div>
+    <div id="ayahRef" class="ref"></div>
+  </footer>
+
+  <div id="status" class="status"></div>
 </div>
 
 <div id="night" class="night hidden"><div id="nightclock">--:--</div></div>

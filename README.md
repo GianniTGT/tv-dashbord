@@ -1,7 +1,8 @@
 # Familien-TV-Dashboard (LG OLED, webOS)
 
-Ein dunkles Dashboard für den Fernseher: Uhr, Wetter, **Familien-Pinnwand**, Termine (Google-Kalender + eigene) und "Wichtig".
-Die Familie schreibt vom Handy aus Nachrichten darauf (`admin.html`). Der TV holt sich alle 30 Sekunden den neuen Stand.
+Ein dunkles Dashboard für den Fernseher: Uhr, Wetter, **Familien-Pinnwand mit Sprachnachrichten**, Termine (Google-Kalender + eigene), "Wichtig", eine **Foto-Ecke** und unten die **Ayah des Tages** (oder ein eigener Spruch).
+
+**So kommen die Daten auf den TV:** Alles geht übers Handy. Auf `admin.html` schreibt man Nachrichten, nimmt Sprachnachrichten auf und lädt Fotos hoch. Das wird auf deinem Server gespeichert, und der TV holt es sich alle 30 Sekunden ab.
 
 ```
 public/
@@ -9,6 +10,9 @@ public/
   admin.html                  → Handy-Seite zum Schreiben (Familie)
   api.php                     → Daten speichern / lesen (JSON-Datei in data/)
   calendar.php                → Google-Kalender (iCal) lesen, 10 Min. Cache
+  media.php                   → Fotos & Sprachnachrichten hochladen / ausliefern (geschützt)
+  ayah.php                    → Ayah des Tages (api.alquran.cloud, 1× pro Tag geholt)
+  lib.php                     → Hilfsfunktionen
   config.sample.php           → Vorlage für config.php
 webos/                        → LG-App-Daten (appinfo.json, Icons)
 .github/workflows/webos.yml   → baut die LG-App (.ipk) automatisch
@@ -22,6 +26,15 @@ webos/                        → LG-App-Daten (appinfo.json, Icons)
 - **Nachtmodus** (Standard 23:00–06:00): Der Bildschirm ist fast schwarz, nur eine kleine, dunkle Uhr wandert herum.
 - Alle 6 Stunden lädt die Seite neu, damit der alte TV-Browser nicht langsam wird.
 
+## Fotos, Sprachnachrichten, Ayah
+
+- **Fotos:** Auf dem Handy unter "Fotos für die TV-Ecke" mehrere Fotos auswählen. Sie werden auf dem Handy verkleinert, auf dem Server neu gespeichert (GPS- und Standortdaten werden entfernt) und wechseln auf dem TV alle 60 Sekunden mit Überblendung. Ein neues Foto wird sofort angezeigt. Maximal 300 Fotos, die ältesten fallen weg (einstellbar).
+- **Sprachnachrichten:** Auf dem Handy die rote Taste antippen, sprechen, nochmals antippen, anhören und senden. Alternativ eine Audiodatei auswählen. Auf dem TV erscheint sie oben in der Pinnwand mit "NEU".
+  **Fernbedienung:** ▲▼ zum Auswählen, **OK** zum Abspielen oder Pausieren, **Zurück** zum Stoppen. Mit der Magic Remote einfach darauf zeigen und klicken.
+  Die Aufnahme braucht **HTTPS** (Mikrofon-Freigabe im Handy-Browser).
+- **Ayah des Tages:** Jeden Tag ein anderer Vers aus einer Auswahl von 62 aufbauenden Versen (Geduld, Vertrauen, Dankbarkeit, Familie, Bittgebete). Angezeigt werden Arabisch und Deutsch (Bubenheim/Elyas). Albanisch lässt sich in `config.php` mit `'ayah_translations' => ['de.bubenheim', 'sq.ahmeti']` dazuschalten.
+  Wer auf dem Handy einen **eigenen Spruch** setzt, ersetzt damit die Ayah, bis er wieder gelöscht wird.
+
 ## 1. Server einrichten (Plesk / Hosttech)
 
 1. Eine Subdomain anlegen, z. B. `tv.deine-domain.ch` (PHP 8, **mit SSL**).
@@ -32,7 +45,8 @@ webos/                        → LG-App-Daten (appinfo.json, Icons)
    - `ical`: Google-Kalender → Einstellungen → Kalender wählen → **"Privatadresse im iCal-Format"** kopieren. Mehrere Kalender sind möglich, jeder bekommt eine eigene Farbe.
    - `family`: Namen und Farben anpassen
 4. In `config.js` bei `DASH_KEY` denselben Wert wie `view_key` eintragen.
-5. Den Ordner `data/` für PHP beschreibbar machen. Er ist per `.htaccess` gesperrt. Falls Plesk nur nginx verwendet: In den Plesk-Einstellungen den Zugriff auf `/data/` sperren.
+5. In Plesk unter PHP-Einstellungen `upload_max_filesize` und `post_max_size` auf **25M** setzen (für Fotos und Audio). Die PHP-Erweiterung **GD** muss aktiv sein (bei Hosttech Standard).
+6. Den Ordner `data/` für PHP beschreibbar machen. Er ist per `.htaccess` gesperrt. Falls Plesk nur nginx verwendet: In den Plesk-Einstellungen den Zugriff auf `/data/` sperren.
 
 Testen im PC-Browser: `https://tv.deine-domain.ch/` (TV-Ansicht) und `https://tv.deine-domain.ch/admin.html` (Handy-Seite).
 

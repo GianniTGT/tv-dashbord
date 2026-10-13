@@ -17,10 +17,12 @@ if (!file_exists($cfgFile)) {
     exit;
 }
 $cfg = require $cfgFile;
+require __DIR__ . '/lib.php';
 $dataFile = __DIR__ . '/data/dashboard.json';
 
 $empty = [
     'message'   => '',
+    'quote'     => '',   // eigener Spruch des Tages (ersetzt die Ayah, wenn gesetzt)
     'notes'     => [],   // Familien-Pinnwand: {id, to, from, text, until}
     'important' => [],   // {id, text, date}
     'events'    => [],   // {id, title, date, time}
@@ -43,7 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'lat' => $cfg['lat'], 'lon' => $cfg['lon'], 'place' => $cfg['place'],
         'night_from' => $cfg['night_from'], 'night_to' => $cfg['night_to'],
         'family' => $cfg['family'] ?? [],
+        'photo_seconds' => (int)($cfg['photo_seconds'] ?? 60),
     ];
+    $m = media_load(__DIR__ . '/data');
+    $d['photos'] = array_map(fn($p) => ['id' => $p['id'], 'src' => 'media.php?f=' . $p['file']], $m['photos']);
+    $d['audio'] = array_map(fn($a) => ['id' => $a['id'], 'src' => 'media.php?f=' . $a['file'], 'from' => $a['from'],
+        'to' => $a['to'], 'title' => $a['title'], 'duration' => $a['duration'], 'created' => $a['created']], $m['audio']);
     echo json_encode($d, JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -65,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $clean = fn($s, $max = 500) => mb_substr(trim(strip_tags((string)$s)), 0, $max);
     $out = $empty;
     $out['message'] = $clean($in['message'] ?? '', 200);
+    $out['quote'] = $clean($in['quote'] ?? '', 300);
     foreach (($in['notes'] ?? []) as $n) {
         if ($clean($n['text'] ?? '') === '') continue;
         $out['notes'][] = ['id' => $clean($n['id'] ?? uniqid(), 40), 'text' => $clean($n['text'], 300),

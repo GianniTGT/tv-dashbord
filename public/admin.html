@@ -32,6 +32,19 @@
   .toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:#222; padding:10px 18px; border-radius:20px; font-size:14px; opacity:0; transition:opacity .3s; }
   .toast.show { opacity:1; }
   .hidden { display:none; }
+  .rec { display:flex; align-items:center; gap:14px; margin:10px 0; }
+  .recbtn { width:64px; height:64px; border-radius:50%; flex:none; background:#2a1216; border:2px solid var(--red); color:var(--red); font-size:24px; padding:0; }
+  .recbtn.on { background:var(--red); color:#0b0b0c; animation:pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity:.6; } }
+  .rectime { font-size:22px; font-variant-numeric:tabular-nums; }
+  audio { width:100%; margin:6px 0 10px; }
+  .thumbs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
+  .thumb { position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; background:#000; }
+  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .thumb button { position:absolute; top:4px; right:4px; width:28px; height:28px; border-radius:50%; padding:0; background:rgba(0,0,0,.7); color:#fff; font-size:16px; line-height:28px; }
+  .filebtn { display:block; text-align:center; background:#1c2333; color:var(--accent); border:1px dashed #33405e; border-radius:10px; padding:12px; cursor:pointer; }
+  .filebtn input { display:none; }
+  .progress { color:var(--muted); font-size:14px; margin-top:8px; }
   .empty { color:var(--muted); font-size:14px; padding:10px 0 0; }
 </style>
 </head>
@@ -60,6 +73,28 @@
     <div class="list" id="noteList"></div>
   </div>
 
+  <h2>Sprachnachricht</h2>
+  <div class="card">
+    <div style="color:var(--muted);font-size:14px;margin-bottom:6px">Für wen?</div>
+    <div class="chips" id="vToChips"></div>
+    <input id="vTitle" placeholder="Titel (optional), z. B. Gute Nacht 🌙">
+    <div class="rec">
+      <button class="recbtn" id="recBtn" aria-label="Aufnehmen">●</button>
+      <div><div class="rectime" id="recTime">0:00</div><div class="progress" id="recHint">Tippen zum Aufnehmen</div></div>
+    </div>
+    <audio id="recPreview" controls class="hidden"></audio>
+    <button id="vSend" class="hidden">Sprachnachricht senden</button>
+    <label class="filebtn" style="margin-top:10px">oder Audiodatei auswählen<input type="file" id="vFile" accept="audio/*"></label>
+    <div class="list" id="vList"></div>
+  </div>
+
+  <h2>Fotos für die TV-Ecke</h2>
+  <div class="card">
+    <label class="filebtn">📷 Fotos auswählen (mehrere möglich)<input type="file" id="pFiles" accept="image/*" multiple></label>
+    <div class="progress" id="pProgress"></div>
+    <div class="thumbs" id="pThumbs"></div>
+  </div>
+
   <h2>Termine (zusätzlich zum Kalender)</h2>
   <div class="card">
     <input id="evTitle" placeholder="z. B. Erina Zahnarzt" style="margin-bottom:10px">
@@ -80,6 +115,16 @@
     </div>
     <button id="impAdd">Hinzufügen</button>
     <div class="list" id="impList"></div>
+  </div>
+
+  <h2>Spruch des Tages</h2>
+  <div class="card">
+    <textarea id="quote" placeholder="Leer lassen = Ayah des Tages wird angezeigt"></textarea>
+    <div style="height:10px"></div>
+    <div class="row">
+      <button id="quoteSave">Spruch setzen</button>
+      <button id="quoteClear" class="ghost" style="width:100%">Wieder Ayah zeigen</button>
+    </div>
   </div>
 
   <h2>Banner oben (optional)</h2>
@@ -192,7 +237,122 @@ function render() {
     () => mutate(d => { d.important = d.important.filter(x => x.id !== i.id); }, 'Erledigt'))));
 
   $('msg').value = data.message || '';
+  $('quote').value = data.quote || '';
+
+  chips($('vToChips'), vTo, n => { vTo = n; render(); }, true);
+  const vl = $('vList'); vl.innerHTML = '';
+  (data.audio || []).forEach(a => vl.appendChild(item(colorOf(a.to || 'Alle'), '🎙 ' + (a.title || 'Sprachnachricht'),
+    'Für ' + (a.to || 'Alle') + (a.from ? ' · von ' + a.from : '') + ' · ' + new Date(a.created * 1000).toLocaleDateString('de-CH'),
+    () => mediaDelete('audio', a.id))));
+
+  const th = $('pThumbs'); th.innerHTML = '';
+  (data.photos || []).forEach(p => {
+    const d = document.createElement('div'); d.className = 'thumb';
+    const img = document.createElement('img'); img.loading = 'lazy'; img.src = p.src + '&t=' + encodeURIComponent(store.get('dash_token') || '');
+    const x = document.createElement('button'); x.textContent = '×';
+    x.onclick = () => { if (confirm('Foto vom TV entfernen?')) mediaDelete('photos', p.id); };
+    d.append(img, x); th.appendChild(d);
+  });
 }
+
+// ---------- Fotos & Audio hochladen ----------
+let vTo = 'Alle';
+async function upload(fields, file, filename) {
+  const fd = new FormData();
+  Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
+  if (file) fd.append('file', file, filename || file.name || 'upload');
+  const r = await fetch('media.php', { method: 'POST', headers: { 'X-Token': store.get('dash_token') || '' }, body: fd });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401) { store.del('dash_token'); showLogin(); throw new Error('Passwort falsch'); }
+  if (!r.ok) throw new Error(j.error || ('Fehler ' + r.status));
+  return j;
+}
+async function refresh() { data = await load(); render(); }
+async function mediaDelete(type, id) {
+  try { await upload({ action: 'delete', type, id }); await refresh(); toast('Gelöscht'); }
+  catch (e) { toast(e.message); }
+}
+
+// Foto im Handy verkleinern (schneller Upload, auch bei schlechtem Netz)
+function shrink(file, max = 1600) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => resolve(b || file), 'image/jpeg', 0.88);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };  // Server versucht es dann selbst
+    img.src = url;
+  });
+}
+$('pFiles').onchange = async (e) => {
+  const files = [...e.target.files]; e.target.value = '';
+  let ok = 0;
+  for (let i = 0; i < files.length; i++) {
+    $('pProgress').textContent = 'Lade hoch ' + (i + 1) + ' / ' + files.length + ' …';
+    try { await upload({ action: 'photo', from: store.get('dash_me') || '' }, await shrink(files[i]), 'foto.jpg'); ok++; }
+    catch (err) { toast(err.message); }
+  }
+  $('pProgress').textContent = ok ? ok + ' Foto(s) auf dem TV ✓' : '';
+  await refresh();
+};
+
+// ---------- Sprachnachricht aufnehmen ----------
+let rec = null, recChunks = [], recBlob = null, recStart = 0, recTimer = null, recDur = 0;
+const fmt = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+$('recBtn').onclick = async () => {
+  if (rec && rec.state === 'recording') { rec.stop(); return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder) return toast('Aufnahme hier nicht möglich – Audiodatei wählen');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const type = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    recChunks = [];
+    rec.ondataavailable = e => e.data.size && recChunks.push(e.data);
+    rec.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      clearInterval(recTimer);
+      recBlob = new Blob(recChunks, { type: rec.mimeType || 'audio/webm' });
+      $('recPreview').src = URL.createObjectURL(recBlob);
+      $('recPreview').classList.remove('hidden'); $('vSend').classList.remove('hidden');
+      $('recBtn').classList.remove('on'); $('recBtn').textContent = '●';
+      $('recHint').textContent = 'Anhören, dann senden – oder neu aufnehmen';
+    };
+    rec.start();
+    recStart = Date.now(); recDur = 0;
+    $('recBtn').classList.add('on'); $('recBtn').textContent = '■';
+    $('recHint').textContent = 'Aufnahme läuft – nochmals tippen zum Stoppen';
+    recTimer = setInterval(() => {
+      recDur = Math.round((Date.now() - recStart) / 1000);
+      $('recTime').textContent = fmt(recDur);
+      if (recDur >= 300) rec.stop();   // max. 5 Minuten
+    }, 250);
+  } catch (e) { toast('Mikrofon nicht erlaubt'); }
+};
+async function sendAudio(blob, name, duration) {
+  $('vSend').disabled = true; $('vSend').textContent = 'Wird gesendet …';
+  try {
+    await upload({ action: 'audio', from: store.get('dash_me') || '', to: vTo, title: $('vTitle').value.trim(), duration }, blob, name);
+    toast('Sprachnachricht auf dem TV ✓');
+    recBlob = null; $('vTitle').value = ''; $('recTime').textContent = '0:00'; $('recHint').textContent = 'Tippen zum Aufnehmen';
+    $('recPreview').classList.add('hidden'); $('vSend').classList.add('hidden');
+    await refresh();
+  } catch (e) { toast(e.message); }
+  $('vSend').disabled = false; $('vSend').textContent = 'Sprachnachricht senden';
+}
+$('vSend').onclick = () => recBlob && sendAudio(recBlob, recBlob.type.includes('mp4') ? 'aufnahme.m4a' : 'aufnahme.webm', recDur);
+$('vFile').onchange = (e) => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  const a = new Audio(URL.createObjectURL(f));
+  a.onloadedmetadata = () => sendAudio(f, f.name, Math.round(a.duration || 0));
+  a.onerror = () => sendAudio(f, f.name, 0);
+};
 
 $('noteAdd').onclick = () => {
   const text = $('noteText').value.trim();
@@ -214,6 +374,8 @@ $('impAdd').onclick = () => {
   $('impText').value = ''; $('impDate').value = '';
 };
 $('msgSave').onclick = () => { const v = $('msg').value.trim(); mutate(d => { d.message = v; }, 'Banner gesetzt'); };
+$('quoteSave').onclick = () => { const v = $('quote').value.trim(); mutate(d => { d.quote = v; }, 'Spruch gesetzt'); };
+$('quoteClear').onclick = () => mutate(d => { d.quote = ''; }, 'Ayah wird angezeigt');
 $('msgClear').onclick = () => mutate(d => { d.message = ''; }, 'Banner entfernt');
 $('logout').onclick = () => { store.del('dash_token'); showLogin(); };
 
