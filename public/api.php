@@ -29,6 +29,9 @@ $empty = [
     'updated'   => 0,
 ];
 
+// Alte Namen auf neue umschreiben (z. B. Papa → Babi), Einstellung 'aliases' in config.php
+function alias_name($n, $cfg) { $a = $cfg['aliases'] ?? []; return $a[$n] ?? $n; }
+
 function load($file, $empty) {
     if (!file_exists($file)) return $empty;
     $d = json_decode(file_get_contents($file), true);
@@ -41,17 +44,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
               || (($_SERVER['HTTP_X_TOKEN'] ?? '') !== '' && token_ok($cfg));
     if (!$okView) { http_response_code(403); echo json_encode(['error' => 'Kein Zugriff']); exit; }
     $d = load($dataFile, $empty);
+    foreach ($d['notes'] as &$n) { $n['from'] = alias_name($n['from'] ?? '', $cfg); $n['to'] = alias_name($n['to'] ?? '', $cfg); }
+    unset($n);
     $d['settings'] = [
         'lat' => $cfg['lat'], 'lon' => $cfg['lon'], 'place' => $cfg['place'],
         'night_from' => $cfg['night_from'], 'night_to' => $cfg['night_to'],
         'family' => $cfg['family'] ?? [],
         'photo_seconds' => (int)($cfg['photo_seconds'] ?? 20),
+        'aliases' => $cfg['aliases'] ?? new stdClass(),
         'lang' => in_array($cfg['lang'] ?? 'de', ['de', 'sq'], true) ? $cfg['lang'] : 'de',
     ];
+    // Version der TV-Dateien: ändert sich bei jedem Update → TV lädt sich selbst neu
+    $d['version'] = max(array_map(fn($f) => @filemtime(__DIR__ . '/' . $f) ?: 0, ['index.html', 'tv.js', 'tv.css', 'config.js']));
     $m = media_load(__DIR__ . '/data');
     $d['photos'] = array_map(fn($p) => ['id' => $p['id'], 'src' => 'media.php?f=' . $p['file']], $m['photos']);
-    $d['audio'] = array_map(fn($a) => ['id' => $a['id'], 'src' => 'media.php?f=' . $a['file'], 'from' => $a['from'],
-        'to' => $a['to'], 'title' => $a['title'], 'duration' => $a['duration'], 'created' => $a['created']], $m['audio']);
+    $d['audio'] = array_map(fn($a) => ['id' => $a['id'], 'src' => 'media.php?f=' . $a['file'], 'from' => alias_name($a['from'], $cfg),
+        'to' => alias_name($a['to'], $cfg), 'title' => $a['title'], 'duration' => $a['duration'], 'created' => $a['created']], $m['audio']);
     echo json_encode($d, JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -76,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach (($in['notes'] ?? []) as $n) {
         if ($clean($n['text'] ?? '') === '') continue;
         $out['notes'][] = ['id' => $clean($n['id'] ?? uniqid(), 40), 'text' => $clean($n['text'], 300),
-                           'to' => $clean($n['to'] ?? '', 30), 'from' => $clean($n['from'] ?? '', 30),
+                           'to' => alias_name($clean($n['to'] ?? '', 30), $cfg), 'from' => alias_name($clean($n['from'] ?? '', 30), $cfg),
                            'until' => preg_match('/^\d{4}-\d{2}-\d{2}$/', $n['until'] ?? '') ? $n['until'] : ''];
     }
     foreach (($in['important'] ?? []) as $n) {

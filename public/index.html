@@ -6,7 +6,11 @@
 <title>Familien Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tv.css">
+<script>
+  // Cache-Bremse: ?v=… aus der Adresse an CSS/JS anhängen
+  var V = (location.search.match(/[?&]v=(\d+)/) || [])[1] || String(Date.now()).slice(0, 8);
+  document.write('<link rel="stylesheet" href="tv.css?v=' + V + '">');
+</script>
 </head>
 <body>
 <div id="stage">
@@ -57,7 +61,9 @@
 <div id="night" class="night hidden"><div id="nightclock">--:--</div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@17.0.3/dist/twemoji.min.js" crossorigin="anonymous"></script>
-<script src="config.js"></script>
-<script src="tv.js"></script>
+<script>
+  document.write('<script src="config.js?v=' + V + '"><\/script>');
+  document.write('<script src="tv.js?v=' + V + '"><\/script>');
+</script>
 </body>
 </html>

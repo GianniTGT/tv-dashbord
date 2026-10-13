@@ -175,6 +175,8 @@ async function load() {
   if (d.error) throw new Error(d.error);
   family = d.settings.family || [];
   lang = d.settings.lang || 'de';
+  const al = d.settings.aliases || {}, me = store.get('dash_me');
+  if (me && al[me]) store.set('dash_me', al[me]);
   return d;
 }
 

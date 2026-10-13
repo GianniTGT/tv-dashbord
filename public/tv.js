@@ -157,6 +157,14 @@
     getJSON(API + 'api.php?k=' + KEY, function (err, d) {
       if (err) return showStatus();
       state.data = d;
+      // Automatisches Update: neue Version auf dem Server → Seite frisch laden
+      if (d.version) {
+        if (state.version && d.version !== state.version && !(player && !player.paused)) {
+          location.replace(location.pathname + '?v=' + d.version);
+          return;
+        }
+        state.version = d.version;
+      }
       state.settings = d.settings;
       var langChanged = (I18N[d.settings.lang] || I18N.de) !== L;
       setLang(d.settings.lang);

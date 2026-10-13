@@ -121,10 +121,11 @@ if ($action === 'audio') {
     if (!move_uploaded_file($file['tmp_name'], "$base/$fileRel")) fail(500, 'Speichern fehlgeschlagen');
 
     $removed = [];
-    media_update($base, function (&$m) use ($id, $fileRel, $maxAudio, $clean, &$removed) {
+    media_update($base, function (&$m) use ($id, $fileRel, $maxAudio, $clean, $cfg, &$removed) {
         array_unshift($m['audio'], [
             'id' => $id, 'file' => $fileRel,
-            'from' => $clean($_POST['from'] ?? '', 30), 'to' => $clean($_POST['to'] ?? 'Alle', 30),
+            'from' => (($cfg['aliases'] ?? [])[$f = $clean($_POST['from'] ?? '', 30)] ?? $f),
+            'to' => (($cfg['aliases'] ?? [])[$t = $clean($_POST['to'] ?? 'Alle', 30)] ?? $t),
             'title' => $clean($_POST['title'] ?? '', 120),
             'duration' => max(0, min(3600, (int)($_POST['duration'] ?? 0))),
             'created' => time(),

@@ -29,6 +29,12 @@ return [
         ['name' => 'Isa',   'color' => '#9ece6a'],
     ],
 
+    // Alte Namen automatisch umbenennen (auch bei schon gespeicherten Nachrichten)
+    'aliases' => [
+        // 'Papa' => 'Babi',
+        // 'Mama' => 'Mami',
+    ],
+
     // Wetter (Open-Meteo, kein Schlüssel nötig) – Standard: Bern
     'lat' => 46.948,
     'lon' => 7.447,
