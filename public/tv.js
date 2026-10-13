@@ -66,13 +66,28 @@
   }
   function applyStaticTexts() {
     var hs = document.querySelectorAll('.panel h2');
-    if (hs[0]) hs[0].textContent = L.h_family;
-    if (hs[1]) hs[1].textContent = L.h_agenda;
-    if (hs[2]) hs[2].textContent = L.h_important;
+    var icons = ['📌', '📅', '⭐'], texts = [L.h_family, L.h_agenda, L.h_important];
+    for (var i = 0; i < 3; i++) {
+      if (!hs[i]) continue;
+      hs[i].innerHTML = '';
+      hs[i].appendChild(el('span', 'ico', icons[i]));
+      hs[i].appendChild(document.createTextNode(texts[i]));
+      emo(hs[i]);
+    }
     $('photoEmpty').textContent = L.noPhotos;
   }
 
   function $(id) { return document.getElementById(id); }
+  // Emojis in farbige Bilder umwandeln (Twemoji, SVG)
+  function emo(node) {
+    if (!window.twemoji || !node) return;
+    try { window.twemoji.parse(node, { folder: 'svg', ext: '.svg' }); } catch (e) {}
+  }
+  var WICON = function (c) {
+    if (c === 0) return '☀️'; if (c === 1) return '🌤️'; if (c === 2) return '⛅'; if (c === 3) return '☁️';
+    if (c === 45 || c === 48) return '🌫️'; if (c >= 51 && c <= 67) return '🌧️'; if (c >= 71 && c <= 77) return '❄️';
+    if (c >= 80 && c <= 82) return '🌦️'; if (c === 85 || c === 86) return '🌨️'; if (c >= 95) return '⛈️'; return '';
+  };
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function parseYmd(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
@@ -172,14 +187,21 @@
       if (err || !w || !w.current_weather) return;
       var box = $('weather');
       box.innerHTML = '';
-      box.appendChild(el('div', 'now', Math.round(w.current_weather.temperature) + '°'));
+      var now = el('div', 'now');
+      now.appendChild(el('span', 'wico', WICON(w.current_weather.weathercode)));
+      now.appendChild(document.createTextNode(Math.round(w.current_weather.temperature) + '°'));
+      box.appendChild(now);
       box.appendChild(el('div', 'desc', (s.place ? s.place + ' · ' : '') + (L.W[w.current_weather.weathercode] || '')));
       var days = el('div', 'days');
       for (var i = 1; i < w.daily.time.length; i++) {
         var d = parseYmd(w.daily.time[i]);
-        days.appendChild(el('span', null, L.WD_S[d.getDay()] + ' ' + Math.round(w.daily.temperature_2m_min[i]) + '/' + Math.round(w.daily.temperature_2m_max[i]) + '°'));
+        var dsp = el('span');
+        dsp.appendChild(el('span', 'wico', WICON(w.daily.weathercode[i])));
+        dsp.appendChild(document.createTextNode(L.WD_S[d.getDay()] + ' ' + Math.round(w.daily.temperature_2m_min[i]) + '/' + Math.round(w.daily.temperature_2m_max[i]) + '°'));
+        days.appendChild(dsp);
       }
       box.appendChild(days);
+      emo(box);
     });
   }
 
@@ -199,6 +221,7 @@
     var msg = $('message');
     msg.textContent = d.message || '';
     msg.classList.toggle('hidden', !d.message);
+    emo(msg);
 
     // Familien-Pinnwand (abgelaufene "nur heute"-Notizen ausblenden)
     var notes = $('notes');
@@ -257,6 +280,7 @@
     }
 
     renderVoice();
+    emo($('notes')); emo($('agenda'));
     fit('notes', '.note');
     fit('agenda', '.ev');
 
@@ -278,6 +302,7 @@
       }
       imp.appendChild(box);
     });
+    emo($('important'));
     fit('important', '.imp');
   }
 
@@ -330,6 +355,7 @@
       row.onclick = function () { voiceSel = i; toggleVoice(); };
       box.appendChild(row);
     });
+    emo(box);
   }
 
   function toggleVoice() {
@@ -430,6 +456,7 @@
       ref.textContent = L.ayahRef(ayahData.surah, ayahData.surah_name, ayahData.ayah);
     } else { box.classList.add('hidden'); return; }
     box.classList.remove('hidden');
+    emo(tr);
     ar.classList.toggle('hidden', !ar.textContent);
     // Schrift verkleinern, bis alles hineinpasst
     var fa = 40, ft = 26;

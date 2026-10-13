@@ -157,7 +157,7 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
   del(k) { try { localStorage.removeItem(k); } catch (e) {} },
 };
-let data = null, family = [], toSel = 'Alle';
+let data = null, family = [], toSel = 'Alle', lang = 'de';
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const colorOf = n => (family.find(f => f.name === n) || {}).color || '#9aa5ce';
@@ -171,6 +171,7 @@ async function load() {
   const d = await r.json();
   if (d.error) throw new Error(d.error);
   family = d.settings.family || [];
+  lang = d.settings.lang || 'de';
   return d;
 }
 
@@ -199,7 +200,7 @@ function chips(box, selected, onPick, includeAll) {
     const b = document.createElement('button');
     b.className = 'chip' + (f.name === selected ? ' on' : '');
     if (f.name === selected) b.style.background = f.color;
-    b.textContent = f.name;
+    b.textContent = (f.name === 'Alle' && lang === 'sq') ? 'Të gjithë' : f.name;
     b.onclick = () => onPick(f.name);
     box.appendChild(b);
   });
