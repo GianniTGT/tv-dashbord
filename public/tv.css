@@ -50,7 +50,7 @@ html, body {
 /* Mit Gebetszeiten wird das Raster etwas niedriger */
 .with-prayers .grid { height: 470px; margin-top: 14px; }
 .with-prayers .top { height: 202px; }
-.with-prayers .photo { height: 225px; }
+.with-prayers .photo { height: 285px; }
 
 /* ---- Salah-Zeiten ---- */
 .prayers {
@@ -140,31 +140,28 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.06em; vertical-align: -0.12em; 
 
 /* ---- Foto-Ecke ---- */
 .photo {
-  position: relative; height: 270px; border-radius: 18px; overflow: hidden; background: #000;
-  margin-bottom: 18px; border: 1px solid #262626; flex: none;
+  position: relative; height: 270px; overflow: hidden; margin-bottom: 18px; flex: none;
 }
 .photo .slide {
   position: absolute; left: 0; top: 0; width: 100%; height: 100%;
   opacity: 0; transition: opacity 2.5s ease-in-out;
 }
 .photo .slide.show { opacity: 1; }
-.photo .slide img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-/* Hintergrund: gleiches Foto, unscharf und dunkel – füllt die Ränder */
-.photo .slide .bg { object-fit: cover; filter: blur(18px) brightness(0.35); transform: scale(1.2); }
-/* Vordergrund: ganzes Foto, nichts abgeschnitten */
-.photo .slide .fg { object-fit: contain; filter: brightness(0.88); }
-/* Sanfte Bewegung (Ken Burns), so klein, dass nichts verloren geht */
+/* Rahmen passt sich dem Foto an: Hochformat = hoher Rahmen, Querformat = breiter Rahmen.
+   Das ganze Foto ist sichtbar, nichts unscharf, nichts abgeschnitten. Grösse setzt tv.js. */
+.photo .frame {
+  position: absolute; overflow: hidden; border-radius: 16px;
+  border: 2px solid #2a2a2a; background: #000;
+}
+.photo .frame img { display: block; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.92); }
+/* ganz leichte Bewegung innerhalb des Rahmens */
 .photo .slide.kb1 .fg { animation: kb1 25s ease-in-out infinite alternate; }
 .photo .slide.kb2 .fg { animation: kb2 25s ease-in-out infinite alternate; }
-.photo .slide.kb3 .fg { animation: kb3 25s ease-in-out infinite alternate; }
-.photo .slide.kb4 .fg { animation: kb4 25s ease-in-out infinite alternate; }
-@keyframes kb1 { from { transform: scale(1.0); }                  to { transform: scale(1.06) translate(-1.5%, -1%); } }
-@keyframes kb2 { from { transform: scale(1.06) translate(1.5%, 1%); } to { transform: scale(1.0); } }
-@keyframes kb3 { from { transform: scale(1.02) translate(-1.5%, 0); } to { transform: scale(1.06) translate(1.5%, -1%); } }
-@keyframes kb4 { from { transform: scale(1.06) translate(0, -1.5%); } to { transform: scale(1.02) translate(-1%, 1%); } }
+@keyframes kb1 { from { transform: scale(1.0); } to { transform: scale(1.04); } }
+@keyframes kb2 { from { transform: scale(1.04); } to { transform: scale(1.0); } }
 .photo-empty {
   position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center;
-  border-radius: 18px; color: #3a3a3a; font-size: 22px; text-align: center; padding: 20px;
+  border-radius: 18px; border: 1px dashed #262626; color: #3a3a3a; font-size: 22px; text-align: center; padding: 20px;
 }
 
 /* ---- Ayah / Spruch des Tages ---- */

@@ -434,17 +434,30 @@
     if (!photoTimer || isNew) nextPhoto();
     if (!photoTimer) photoTimer = setInterval(nextPhoto, ((state.settings && state.settings.photo_seconds) || 20) * 1000);
   }
+  // Rahmen genau auf das Seitenverhältnis des Fotos zuschneiden und mittig setzen
+  function fitFrame(slide) {
+    var fg = slide.querySelector('.fg'), frame = slide.querySelector('.frame');
+    if (!fg.naturalWidth) return;
+    var box = $('photo'), bw = box.clientWidth, bh = box.clientHeight;
+    var r = fg.naturalWidth / fg.naturalHeight;
+    var w = bw, h = bw / r;
+    if (h > bh) { h = bh; w = bh * r; }
+    frame.style.width = Math.round(w) + 'px';
+    frame.style.height = Math.round(h) + 'px';
+    frame.style.left = Math.round((bw - w) / 2) + 'px';
+    frame.style.top = Math.round((bh - h) / 2) + 'px';
+  }
   function nextPhoto() {
     var list = state.photos || [];
     if (!list.length) return;
     if (!photoQueue.length) photoQueue = shuffle(list.slice());
     var p = photoQueue.shift();
     var back = photoFront === 'photoA' ? 'photoB' : 'photoA';
-    var slide = $(back), fg = slide.querySelector('.fg'), bg = slide.querySelector('.bg');
-    var kb = 'kb' + (1 + Math.floor(Math.random() * 4));
+    var slide = $(back), fg = slide.querySelector('.fg'), frame = slide.querySelector('.frame');
+    var kb = 'kb' + (1 + Math.floor(Math.random() * 2));
     var url = mediaUrl(p.src);
     fg.onload = function () {
-      bg.src = url;
+      fitFrame(slide);
       slide.className = 'slide show ' + kb;
       var old = $(photoFront);
       setTimeout(function () { if (old !== slide) old.className = 'slide'; }, 2600);  // erst nach dem Überblenden ausblenden
@@ -535,6 +548,7 @@
     if ($('stage').className !== 'with-prayers') {
       $('stage').className = 'with-prayers';
       render();            // Platz ist kleiner geworden → Karten neu einpassen
+      fitFrame($('photoA')); fitFrame($('photoB'));
     }
     // Hijri-Datum
     var h = prayerData.today.hijri;
