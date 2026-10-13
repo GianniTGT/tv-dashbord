@@ -203,3 +203,25 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.06em; vertical-align: -0.12em; 
   position: absolute; font-size: 64px; font-weight: 200; color: #1f1f1f;
   transition: left 30s linear, top 30s linear;
 }
+
+/* ---- Wochenansicht Termine ---- */
+.panel.agenda { display: flex; flex-direction: column; }
+.week { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.wrow {
+  flex: 1; display: flex; align-items: center; min-height: 0; overflow: hidden;
+  border-top: 1px solid #161616; padding: 2px 0 2px 12px; border-left: 3px solid transparent;
+}
+.wrow:first-child { border-top: 0; }
+.wrow.is-today { border-left-color: #7aa2f7; background: rgba(122, 162, 247, 0.06); border-radius: 6px; }
+.wrow.weekend .wname { color: #c8a96a; }
+.wday { width: 150px; flex: none; }
+.wname { font-size: 22px; color: var(--text); font-weight: 600; line-height: 1.15; }
+.wrow.is-today .wname { color: #7aa2f7; }
+.wdate { font-size: 17px; color: var(--muted); }
+.wevs { flex: 1; min-width: 0; }
+.wevs .ev { font-size: 23px; line-height: 1.25; margin-bottom: 0; }
+.wevs .ev .time { width: 92px; font-size: 20px; }
+.wevs .ev .time.allday { font-size: 15px; }
+.wevs .ev .dot { width: 10px; height: 10px; margin-right: 10px; top: -2px; }
+.wnone { color: #2c2c2c; font-size: 22px; }
+.wmore { flex: none; font-size: 16px; color: #000; background: #6b7a99; border-radius: 8px; padding: 0 8px; margin-left: 10px; font-weight: 700; }

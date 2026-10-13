@@ -263,40 +263,48 @@
     evs = evs.filter(function (e) { var diff = daysBetween(today, e.date); return diff >= 0 && diff < 7; });
     evs.sort(function (a, b) { return (a.date + (a.time || '00:00')).localeCompare(b.date + (b.time || '00:00')); });
 
+    // Wochenansicht: immer 7 Tage (heute + 6), auch Tage ohne Termin
     var ag = $('agenda');
     ag.innerHTML = '';
-    if (!evs.length) ag.appendChild(el('div', 'empty', L.noEvents));
-    var lines = 0, curDay = null, dayBox = null;
-    for (var i = 0; i < evs.length && lines < 13; i++) {
-      var e = evs[i];
-      if (e.date !== curDay) {
-        curDay = e.date;
-        var diff = daysBetween(today, e.date), dt = parseYmd(e.date);
-        var label = diff === 0 ? L.today : diff === 1 ? L.tomorrow : L.date(L.WD[dt.getDay()], dt.getDate(), L.MON[dt.getMonth()]);
-        dayBox = el('div', 'day' + (diff === 0 ? ' is-today' : ''));
-        dayBox.appendChild(el('div', 'label', label));
-        ag.appendChild(dayBox);
-        lines++;
+    ag.className = 'week';
+    var nowD = new Date(), nowM = nowD.getHours() * 60 + nowD.getMinutes();
+    for (var di = 0; di < 7; di++) {
+      var dt = parseYmd(today); dt.setDate(dt.getDate() + di);
+      var dKey = ymd(dt);
+      var dayEvs = evs.filter(function (e) { return e.date === dKey; });
+      if (di === 0) {   // heute: kommende Termine zuerst, vorbei geht nach hinten
+        var isPast = function (e) { return e.time && nowM > minutes(e.time) + 30; };
+        dayEvs = dayEvs.filter(function (e) { return !isPast(e); }).concat(dayEvs.filter(isPast));
       }
-      var past = false;
-      if (e.date === today && e.time) {
-        var now = new Date(), tm = minutes(e.time);
-        past = now.getHours() * 60 + now.getMinutes() > tm + 30;   // 30 Min. nach Beginn ausgrauen
-      }
-      var row = el('div', 'ev' + (past ? ' past' : ''));
-      var dot = el('span', 'dot');
-      dot.style.background = e.color || '#7aa2f7';
-      row.appendChild(dot);
-      row.appendChild(el('span', 'time' + (e.time ? '' : ' allday'), e.time || L.allDay));
-      row.appendChild(el('span', 'title', e.title));
-      dayBox.appendChild(row);
-      lines++;
+      var wd = dt.getDay();
+      var row = el('div', 'wrow' + (di === 0 ? ' is-today' : '') + (wd === 0 || wd === 6 ? ' weekend' : ''));
+      var left = el('div', 'wday');
+      left.appendChild(el('div', 'wname', di === 0 ? L.today : di === 1 ? L.tomorrow : L.WD[wd]));
+      left.appendChild(el('div', 'wdate', dt.getDate() + ' ' + L.MON[dt.getMonth()]));
+      row.appendChild(left);
+      var right = el('div', 'wevs');
+      if (!dayEvs.length) right.appendChild(el('div', 'wnone', '–'));
+      // mit Gebetszeiten weniger Platz → 1 Termin pro Tag, sonst 2; Rest als "+N" in derselben Zeile
+      var maxPer = $('stage').className === 'with-prayers' ? 1 : 2;
+      var shown = dayEvs.slice(0, maxPer);
+      shown.forEach(function (e, idx) {
+        var past = di === 0 && e.time && nowM > minutes(e.time) + 30;   // 30 Min. nach Beginn ausgrauen
+        var line = el('div', 'ev' + (past ? ' past' : ''));
+        var dot = el('span', 'dot');
+        dot.style.background = e.color || '#7aa2f7';
+        line.appendChild(dot);
+        line.appendChild(el('span', 'time' + (e.time ? '' : ' allday'), e.time || L.allDay));
+        line.appendChild(el('span', 'title', e.title));
+        if (idx === shown.length - 1 && dayEvs.length > shown.length) line.appendChild(el('span', 'wmore', '+' + (dayEvs.length - shown.length)));
+        right.appendChild(line);
+      });
+      row.appendChild(right);
+      ag.appendChild(row);
     }
 
     renderVoice();
     emo($('notes')); emo($('agenda'));
     fit('notes', '.note');
-    fit('agenda', '.ev');
 
     // Wichtig
     var imp = $('important');
