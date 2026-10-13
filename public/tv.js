@@ -558,7 +558,7 @@
 
   setInterval(tick, 1000);
   setInterval(loadData, 30 * 1000);          // Pinnwand/Notizen: alle 30 s
-  setInterval(loadCalendar, 5 * 60 * 1000);  // Kalender: alle 5 min
+  setInterval(loadCalendar, 2 * 60 * 1000);  // Kalender: alle 2 min
   setInterval(loadWeather, 30 * 60 * 1000);  // Wetter: alle 30 min
   setInterval(loadAyah, 30 * 60 * 1000);
   setInterval(loadPrayers, 30 * 1000);        // Countdown / neuer Tag     // Ayah: neuer Tag → neuer Vers

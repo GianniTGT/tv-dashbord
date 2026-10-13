@@ -1,6 +1,6 @@
 <?php
 // Liest die Google-Kalender (iCal-Links aus config.php) und liefert die nächsten 14 Tage als JSON.
-// Cache: 10 Minuten. Wiederkehrende Termine: täglich/wöchentlich/monatlich/jährlich (einfach).
+// Cache: 3 Minuten. Wiederkehrende Termine: täglich/wöchentlich/monatlich/jährlich (einfach).
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
@@ -35,7 +35,7 @@ function fetch_url($url, &$err) {
 }
 
 $debug = isset($_GET['debug']);
-if (!$debug && file_exists($cacheFile) && time() - filemtime($cacheFile) < 600) {
+if (!$debug && file_exists($cacheFile) && time() - filemtime($cacheFile) < 180) {
     readfile($cacheFile);
     exit;
 }
