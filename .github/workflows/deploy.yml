@@ -1,9 +1,9 @@
 name: Auf Server hochladen (Hosttech)
 
-# Bei jeder Änderung im Ordner public/ automatisch per FTPS auf den Server.
+# Bei jeder Änderung im Ordner public/ automatisch per FTPS (lftp) auf den Server.
 # Secrets (Settings → Secrets and variables → Actions → Secrets):
 #   FTP_SERVER   z. B. 357.hostserv.eu
-#   FTP_USER     z. B. TV-TIFF
+#   FTP_USER     z. B. tv-tiff
 #   FTP_PASSWORD Passwort des FTP-Kontos
 # Der TV erkennt die neue Version selbst und lädt sich innerhalb von 30 Sekunden neu.
 on:
@@ -18,34 +18,38 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Secrets prüfen
+      - name: lftp installieren
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Hochladen
         env:
-          S: ${{ secrets.FTP_SERVER }}
-          U: ${{ secrets.FTP_USER }}
-          P: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
-          if [ -z "$S" ] || [ -z "$U" ] || [ -z "$P" ]; then
+          if [ -z "$FTP_SERVER" ] || [ -z "$FTP_USER" ] || [ -z "$FTP_PASSWORD" ]; then
             echo "::error::FTP_SERVER, FTP_USER oder FTP_PASSWORD fehlt in den Repository-Secrets."
             exit 1
           fi
-
-      - name: Hochladen (nur geänderte Dateien)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: ./public/
-          server-dir: ./
-          # Diese Dateien gehören dem Server und werden NIE überschrieben:
-          exclude: |
-            **/.git*
-            **/.git*/**
-            config.php
-            config.js
-            data/**
+          # config.php, config.js und data/ gehören dem Server und werden NIE überschrieben
+          lftp -u "$FTP_USER","$FTP_PASSWORD" "$FTP_SERVER" <<'EOF'
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate no
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 3
+          set net:reconnect-interval-base 5
+          mirror --reverse --verbose --parallel=2 \
+            --exclude-glob config.php \
+            --exclude-glob config.js \
+            --exclude-glob .git* \
+            --exclude data/ \
+            ./public/ ./
+          bye
+          EOF
+          echo "Fertig – der TV lädt die neue Version innerhalb von 30 Sekunden."
