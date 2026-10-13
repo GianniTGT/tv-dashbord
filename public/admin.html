@@ -56,7 +56,10 @@
   <h1>TV Pinnwand</h1>
   <div class="card">
     <p style="margin-top:0;color:var(--muted)">Familien-Passwort eingeben (einmalig pro Handy).</p>
-    <input id="pw" type="password" placeholder="Passwort" autocomplete="current-password">
+    <div style="display:flex;gap:8px">
+      <input id="pw" type="text" placeholder="Passwort" autocomplete="off" autocapitalize="off" spellcheck="false" style="font-size:20px;letter-spacing:2px">
+      <button id="pwEye" type="button" class="ghost" style="width:56px;font-size:20px" aria-label="Passwort zeigen oder verstecken">🙈</button>
+    </div>
     <div style="height:10px"></div>
     <button id="pwBtn">Anmelden</button>
   </div>
@@ -404,7 +407,13 @@ document.querySelectorAll('.emojis').forEach(bar => {
 });
 
 function showLogin() { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
-$('pwBtn').onclick = () => { store.set('dash_token', $('pw').value); start(); };
+$('pwBtn').onclick = () => { store.set('dash_token', $('pw').value.trim()); start(); };
+$('pw').onkeydown = (e) => { if (e.key === 'Enter') $('pwBtn').click(); };
+$('pwEye').onclick = () => {
+  const show = $('pw').type === 'password';
+  $('pw').type = show ? 'text' : 'password';
+  $('pwEye').textContent = show ? '🙈' : '👁';
+};
 
 async function start() {
   if (!store.get('dash_token')) return showLogin();
