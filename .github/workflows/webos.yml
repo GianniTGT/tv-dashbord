@@ -1,8 +1,8 @@
 name: LG webOS App bauen
 
+# Nur von Hand starten: GitHub → Actions → "LG webOS App bauen" → Run workflow
+# (Die Browser-Variante auf dem TV braucht diesen Build nicht.)
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
