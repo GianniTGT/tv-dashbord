@@ -14,7 +14,28 @@ if ($viewKey !== '' && !hash_equals($viewKey, (string)($_GET['k'] ?? ''))) {
 $cacheFile = __DIR__ . '/data/calendar-cache.json';
 $tz = new DateTimeZone('Europe/Zurich');
 
-if (file_exists($cacheFile) && time() - filemtime($cacheFile) < 600) {
+// Hilfsfunktion: Datei abrufen – erst mit curl, sonst file_get_contents
+function fetch_url($url, &$err) {
+    $err = '';
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 15, CURLOPT_USERAGENT => 'TiffTVDashboard/1.0']);
+        $body = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if ($body === false) $err = 'curl: ' . curl_error($ch);
+        elseif ($code !== 200) { $err = "HTTP $code"; $body = false; }
+        curl_close($ch);
+        if ($body !== false) return $body;
+    }
+    if (!ini_get('allow_url_fopen')) { $err .= ($err ? ' / ' : '') . 'allow_url_fopen ist aus'; return false; }
+    $body = @file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 15]]));
+    if ($body === false) $err .= ($err ? ' / ' : '') . 'Abruf fehlgeschlagen';
+    return $body;
+}
+
+$debug = isset($_GET['debug']);
+if (!$debug && file_exists($cacheFile) && time() - filemtime($cacheFile) < 600) {
     readfile($cacheFile);
     exit;
 }
@@ -22,6 +43,7 @@ if (file_exists($cacheFile) && time() - filemtime($cacheFile) < 600) {
 $from = new DateTime('today', $tz);
 $to = (clone $from)->modify('+14 days');
 $events = [];
+$errors = [];
 
 function parseDate($val, $params, $tz) {
     $isDate = strlen($val) === 8 || str_contains($params, 'VALUE=DATE');
@@ -38,9 +60,11 @@ function parseDate($val, $params, $tz) {
 }
 
 foreach (($cfg['ical'] ?? []) as $cal) {
-    $ctx = stream_context_create(['http' => ['timeout' => 10]]);
-    $ics = @file_get_contents($cal['url'], false, $ctx);
-    if (!$ics) continue;
+    $ics = fetch_url($cal['url'], $ferr);
+    if (!$ics || strpos($ics, 'BEGIN:VCALENDAR') === false) {
+        $errors[] = ($cal['name'] ?? 'Kalender') . ': ' . ($ferr ?: 'keine Kalenderdaten (Link prüfen – Privatadresse?)');
+        continue;
+    }
     $ics = preg_replace("/\r?\n[ \t]/", '', $ics); // gefaltete Zeilen zusammenfügen
 
     preg_match_all('/BEGIN:VEVENT(.*?)END:VEVENT/s', $ics, $blocks);
@@ -114,7 +138,9 @@ foreach (($cfg['ical'] ?? []) as $cal) {
 }
 
 usort($events, fn($a, $b) => strcmp($a['date'] . ($a['time'] ?: '00:00'), $b['date'] . ($b['time'] ?: '00:00')));
-$json = json_encode(['events' => $events, 'fetched' => time()], JSON_UNESCAPED_UNICODE);
+$out = ['events' => $events, 'fetched' => time()];
+if ($debug) $out['debug'] = ['kalender' => count($cfg['ical'] ?? []), 'termine' => count($events), 'fehler' => $errors];
+$json = json_encode($out, JSON_UNESCAPED_UNICODE | ($debug ? JSON_PRETTY_PRINT : 0));
 if (!is_dir(dirname($cacheFile))) mkdir(dirname($cacheFile), 0755, true);
-file_put_contents($cacheFile, $json);
+if (!$errors) file_put_contents($cacheFile, $json); elseif (is_file($cacheFile)) @unlink($cacheFile);
 echo $json;
