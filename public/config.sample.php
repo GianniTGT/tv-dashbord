@@ -29,7 +29,7 @@ return [
     'place' => 'Bern',
 
     // Fotos: Wechsel alle X Sekunden, maximal so viele Fotos speichern (älteste fallen weg)
-    'photo_seconds' => 60,
+    'photo_seconds' => 20,
     'max_photos' => 300,
     // Sprachnachrichten: maximal so viele behalten
     'max_audio' => 20,

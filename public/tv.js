@@ -326,7 +326,7 @@
     if (!list.length) { $('photoA').className = ''; $('photoB').className = ''; return; }
     if (isNew) photoQueue.push(list[0]);          // neu hochgeladenes Foto sofort zeigen
     if (!photoTimer || isNew) nextPhoto();
-    if (!photoTimer) photoTimer = setInterval(nextPhoto, ((state.settings && state.settings.photo_seconds) || 60) * 1000);
+    if (!photoTimer) photoTimer = setInterval(nextPhoto, ((state.settings && state.settings.photo_seconds) || 20) * 1000);
   }
   function nextPhoto() {
     var list = state.photos || [];
@@ -335,12 +335,16 @@
     var p = photoQueue.shift();
     var back = photoFront === 'photoA' ? 'photoB' : 'photoA';
     var img = $(back);
+    var kb = 'kb' + (1 + Math.floor(Math.random() * 4));
     img.onload = function () {
-      img.className = 'show';
-      $(photoFront).className = '';
+      img.className = 'show ' + kb;
+      var old = $(photoFront);
+      setTimeout(function () { if (old !== img) old.className = ''; }, 2600);  // erst nach dem Überblenden stoppen
       photoFront = back;
     };
-    img.src = mediaUrl(p.src);
+    var url = mediaUrl(p.src);
+    if (img.src.indexOf(url) >= 0 || img.getAttribute('src') === url) img.onload();  // gleiches Bild (nur 1 Foto)
+    else img.src = url;
   }
 
   // ---------- Ayah / Spruch des Tages ----------
