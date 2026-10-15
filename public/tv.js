@@ -26,6 +26,7 @@
       quote: 'SPRUCH DES TAGES', ayahRef: function (s, n, v) { return 'Sure ' + s + ' · ' + n + ' · Vers ' + v; },
       connecting: 'Verbinde …', offline: function (m) { return 'Offline seit ' + m + ' Min.'; },
       noPhotos: 'Fotos über das Handy hinzufügen',
+      wdesc: function (p, c) { return (p ? p + ' · ' : '') + (this.W[c] || ''); },
       PR: { Fajr: 'Fajr', Sunrise: 'Sonnenaufgang', Dhuhr: 'Dhuhr', Asr: 'Asr', Maghrib: 'Maghrib', Isha: 'Isha' },
       inT: function (h, m) { return 'in ' + (h ? h + ' h ' : '') + m + ' min'; }, nowP: 'jetzt',
       HM: ['Muharram', 'Safar', 'Rabi al-awwal', 'Rabi al-thani', 'Dschumada al-ula', 'Dschumada al-achira', 'Radschab', 'Schaban', 'Ramadan', 'Schawwal', 'Dhul-Qada', 'Dhul-Hiddscha'],
@@ -52,6 +53,12 @@
       quote: 'THËNIA E DITËS', ayahRef: function (s, n, v) { return 'Sureja ' + s + ' · ' + n + ' · Ajeti ' + v; },
       connecting: 'Duke u lidhur …', offline: function (m) { return 'Pa lidhje prej ' + m + ' min.'; },
       noPhotos: 'Shto foto nga telefoni',
+      wdesc: function (p, c) { return (p ? p + ' ' : '') + (this.WP[c] || ''); },
+      WP: { 0: 'me qiell të kthjellët', 1: 'kryesisht me diell', 2: 'pjesërisht me re', 3: 'me re', 45: 'me mjegull', 48: 'me mjegull',
+        51: 'me shi të imët', 53: 'me shi të imët', 55: 'me shi të imët', 61: 'me shi të lehtë', 63: 'me shi', 65: 'me shi të fortë',
+        66: 'me shi të ngrirë', 67: 'me shi të ngrirë', 71: 'me borë të lehtë', 73: 'me borë', 75: 'me borë të dendur', 77: 'me kokrriza bore',
+        80: 'me rrebeshe shiu', 81: 'me rrebeshe shiu', 82: 'me rrebeshe të forta', 85: 'me rrebeshe bore', 86: 'me rrebeshe bore',
+        95: 'me stuhi', 96: 'me stuhi e breshër', 99: 'me stuhi e breshër' },
       PR: { Fajr: 'Sabahu', Sunrise: 'Lindja e diellit', Dhuhr: 'Dreka', Asr: 'Ikindia', Maghrib: 'Akshami', Isha: 'Jacia' },
       inT: function (h, m) { return 'pas ' + (h ? h + ' orë ' : '') + m + ' min'; }, nowP: 'tani',
       HM: ['Muharrem', 'Safer', 'Rebiul-evvel', 'Rebiul-ahir', 'Xhumadel-ula', 'Xhumadel-ahire', 'Rexheb', 'Shaban', 'Ramazan', 'Sheval', 'Dhul-kade', 'Dhul-hixhe'],
@@ -205,7 +212,7 @@
       now.appendChild(el('span', 'wico', WICON(w.current_weather.weathercode)));
       now.appendChild(document.createTextNode(Math.round(w.current_weather.temperature) + '°'));
       box.appendChild(now);
-      box.appendChild(el('div', 'desc', (s.place ? s.place + ' · ' : '') + (L.W[w.current_weather.weathercode] || '')));
+      box.appendChild(el('div', 'desc', L.wdesc(s.place, w.current_weather.weathercode)));
       var days = el('div', 'days');
       for (var i = 1; i < w.daily.time.length; i++) {
         var d = parseYmd(w.daily.time[i]);
@@ -226,16 +233,51 @@
     return '#9aa5ce';
   }
 
+  // ---------- Banner oben: Nachricht + "E rëndësishme" ----------
+  function renderBanner(d, today) {
+    var banner = $('banner'), msg = $('message'), imp = $('important');
+    msg.textContent = d.message || '';
+    msg.classList.toggle('hidden', !d.message);
+    imp.innerHTML = '';
+    var items = (d.important || []).slice().sort(function (a, b) { return (a.date || '9999').localeCompare(b.date || '9999'); });
+    if (items.length) {
+      var head = el('span', 'bhead');
+      head.appendChild(el('span', 'ico', '⭐'));
+      head.appendChild(document.createTextNode(L.h_important));
+      imp.appendChild(head);
+    }
+    items.forEach(function (it) {
+      var cls = 'chip', txt = '';
+      if (it.date) {
+        var diff = daysBetween(today, it.date);
+        if (diff < 0) { txt = L.overdue(-diff); cls += ' over'; }
+        else if (diff === 0) { txt = L.dueToday; cls += ' soon'; }
+        else if (diff === 1) { txt = L.dueTomorrow; cls += ' soon'; }
+        else { txt = L.dueIn(diff); if (diff <= 3) cls += ' soon'; }
+      }
+      var chip = el('span', cls);
+      chip.appendChild(el('span', 'ct', it.text));
+      if (txt) chip.appendChild(el('span', 'cw', txt));
+      imp.appendChild(chip);
+    });
+    imp.classList.toggle('hidden', !items.length);
+    banner.classList.toggle('hidden', !d.message && !items.length);
+    banner.className = banner.className.replace(/ ?solo/g, '') + (!d.message || !items.length ? ' solo' : '');
+    emo(banner);
+    // Was nicht hineinpasst: hinten weglassen und "+N" zeigen
+    var chips = imp.querySelectorAll('.chip'), hidden = 0, more = null;
+    for (var i = chips.length - 1; i > 0 && banner.scrollHeight > banner.clientHeight + 2; i--) {
+      imp.removeChild(chips[i]); hidden++;
+      if (!more) { more = el('span', 'chip more'); imp.appendChild(more); }
+      more.textContent = '+' + hidden;
+    }
+  }
+
   function render() {
     var d = state.data;
     if (!d) return;
     var today = ymd(new Date());
 
-    // Banner
-    var msg = $('message');
-    msg.textContent = d.message || '';
-    msg.classList.toggle('hidden', !d.message);
-    emo(msg);
 
     // Familien-Pinnwand (abgelaufene "nur heute"-Notizen ausblenden)
     var notes = $('notes');
@@ -248,7 +290,6 @@
       box.style.borderLeftColor = c;
       var to = el('div', 'to', n.to && n.to !== 'Alle' ? L.forX(n.to) : L.forAll);
       to.style.color = c;
-      if (n.until === today) to.appendChild(el('span', 'today', L.onlyToday));
       box.appendChild(to);
       box.appendChild(el('div', 'text', n.text));
       if (n.from) box.appendChild(el('div', 'from', '– ' + n.from));
@@ -306,26 +347,7 @@
     emo($('notes')); emo($('agenda'));
     fit('notes', '.note');
 
-    // Wichtig
-    var imp = $('important');
-    imp.innerHTML = '';
-    var items = (d.important || []).slice().sort(function (a, b) { return (a.date || '9999').localeCompare(b.date || '9999'); });
-    if (!items.length) imp.appendChild(el('div', 'empty', L.noImportant));
-    items.slice(0, 7).forEach(function (it) {
-      var box = el('div', 'imp');
-      box.appendChild(el('div', 'text', it.text));
-      if (it.date) {
-        var diff = daysBetween(today, it.date), txt, cls = 'when';
-        if (diff < 0) { txt = L.overdue(-diff); cls += ' over'; }
-        else if (diff === 0) { txt = L.dueToday; cls += ' soon'; }
-        else if (diff === 1) { txt = L.dueTomorrow; cls += ' soon'; }
-        else { txt = L.dueIn(diff); if (diff <= 3) cls += ' soon'; }
-        box.appendChild(el('div', cls, txt));
-      }
-      imp.appendChild(box);
-    });
-    emo($('important'));
-    fit('important', '.imp');
+    renderBanner(d, today);
   }
 
   // Was nicht auf den Bildschirm passt, von unten entfernen und "+N weitere" anzeigen
@@ -438,14 +460,15 @@
   function fitFrame(slide) {
     var fg = slide.querySelector('.fg'), frame = slide.querySelector('.frame');
     if (!fg.naturalWidth) return;
-    var box = $('photo'), bw = box.clientWidth, bh = box.clientHeight;
+    var M = 8;   // Platz für den Zierrahmen
+    var box = $('photo'), bw = box.clientWidth - 2 * M, bh = box.clientHeight - 2 * M;
     var r = fg.naturalWidth / fg.naturalHeight;
     var w = bw, h = bw / r;
     if (h > bh) { h = bh; w = bh * r; }
     frame.style.width = Math.round(w) + 'px';
     frame.style.height = Math.round(h) + 'px';
-    frame.style.left = Math.round((bw - w) / 2) + 'px';
-    frame.style.top = Math.round((bh - h) / 2) + 'px';
+    frame.style.left = Math.round(M + (bw - w) / 2) + 'px';
+    frame.style.top = Math.round(M + (bh - h) / 2) + 'px';
   }
   function nextPhoto() {
     var list = state.photos || [];

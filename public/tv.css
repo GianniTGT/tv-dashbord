@@ -28,7 +28,7 @@ html, body {
 
 /* ---- Kopfzeile ---- */
 .top { display: flex; align-items: flex-start; justify-content: space-between; height: 190px; }
-.clock { font-size: 112px; font-weight: 200; letter-spacing: 2px; line-height: 1; color: var(--text); }
+.clock { font-size: 112px; font-weight: 200; letter-spacing: 2px; line-height: 1; color: #6fbf9f; }
 .date { font-size: 32px; color: var(--muted); margin-top: 10px; }
 .message {
   flex: 1; margin: 20px 60px 0; padding: 22px 30px; text-align: center;
@@ -50,7 +50,6 @@ html, body {
 /* Mit Gebetszeiten wird das Raster etwas niedriger */
 .with-prayers .grid { height: 470px; margin-top: 14px; }
 .with-prayers .top { height: 202px; }
-.with-prayers .photo { height: 285px; }
 
 /* ---- Salah-Zeiten ---- */
 .prayers {
@@ -140,7 +139,7 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.06em; vertical-align: -0.12em; 
 
 /* ---- Foto-Ecke ---- */
 .photo {
-  position: relative; height: 270px; overflow: hidden; margin-bottom: 18px; flex: none;
+  position: relative; flex: 1; min-height: 0;
 }
 .photo .slide {
   position: absolute; left: 0; top: 0; width: 100%; height: 100%;
@@ -150,8 +149,10 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.06em; vertical-align: -0.12em; 
 /* Rahmen passt sich dem Foto an: Hochformat = hoher Rahmen, Querformat = breiter Rahmen.
    Das ganze Foto ist sichtbar, nichts unscharf, nichts abgeschnitten. Grösse setzt tv.js. */
 .photo .frame {
-  position: absolute; overflow: hidden; border-radius: 16px;
-  border: 2px solid #2a2a2a; background: #000;
+  position: absolute; overflow: hidden; border-radius: 16px; background: #000;
+  border: 2px solid rgba(200, 169, 106, 0.55);
+  box-shadow: 0 0 0 5px #000, 0 0 0 6px rgba(200, 169, 106, 0.28);
+  --acc: #d4b876;
 }
 .photo .frame img { display: block; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.92); }
 /* ganz leichte Bewegung innerhalb des Rahmens */
@@ -222,3 +223,48 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.06em; vertical-align: -0.12em; 
 .wevs .ev .dot { width: 10px; height: 10px; margin-right: 10px; top: -2px; }
 .wnone { color: #2c2c2c; font-size: 22px; }
 .wmore { flex: none; font-size: 16px; color: #000; background: #6b7a99; border-radius: 8px; padding: 0 8px; margin-left: 10px; font-weight: 700; }
+
+/* ---- Banner oben: Nachricht + E rëndësishme ---- */
+.banner {
+  flex: 1; margin: 6px 40px 0; height: 162px; padding: 8px 28px; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  border: 1px solid rgba(224, 175, 104, 0.32); border-radius: 18px; background: #050505;
+  --acc: #e0af68; --acc-soft: rgba(224, 175, 104, 0.18);
+  box-shadow: 0 0 0 4px #000, 0 0 0 5px var(--acc-soft);
+}
+.bmsg { font-size: 36px; line-height: 1.2; color: #e0af68; }
+.banner.solo .bmsg { font-size: 42px; }
+.bimp { margin-top: 6px; line-height: 1.3; }
+.banner.solo .bimp { margin-top: 0; }
+.bhead { font-size: 17px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: #f7768e; margin-right: 10px; white-space: nowrap; }
+.bhead .ico { margin-right: 6px; }
+.chip {
+  display: inline-block; font-size: 23px; color: var(--text); white-space: nowrap;
+  border: 1px solid rgba(247, 118, 142, 0.35); border-radius: 12px; padding: 1px 12px; margin: 2px 4px; background: #0b0507;
+}
+.banner.solo .chip { font-size: 28px; }
+.chip .cw { font-size: 17px; color: var(--muted); margin-left: 10px; }
+.chip.soon .cw { color: var(--warn); }
+.chip.over { border-color: rgba(247, 118, 142, 0.75); }
+.chip.over .cw { color: var(--red); }
+.chip.more { color: #000; background: #f7768e; border-color: #f7768e; font-weight: 700; font-size: 18px; }
+
+/* ---- Zierrahmen: Doppellinie + Ecken-Ornamente ---- */
+.panel.c-amber { --acc-soft: rgba(224, 175, 104, 0.16); }
+.panel.c-blue  { --acc-soft: rgba(122, 162, 247, 0.16); }
+.panel { box-shadow: 0 0 0 4px #000, 0 0 0 5px var(--acc-soft, #161616); }
+.ayah { position: relative; --acc: #d4b876; --acc-soft: rgba(200, 169, 106, 0.16); box-shadow: 0 0 0 4px #000, 0 0 0 5px var(--acc-soft); }
+.panel::after, .banner::after, .ayah::after, .photo .frame::after {
+  content: ''; position: absolute; top: 7px; left: 7px; right: 7px; bottom: 7px; pointer-events: none; z-index: 2;
+  background:
+    linear-gradient(var(--acc), var(--acc)) left top / 24px 2px no-repeat,
+    linear-gradient(var(--acc), var(--acc)) left top / 2px 24px no-repeat,
+    linear-gradient(var(--acc), var(--acc)) right top / 24px 2px no-repeat,
+    linear-gradient(var(--acc), var(--acc)) right top / 2px 24px no-repeat,
+    linear-gradient(var(--acc), var(--acc)) left bottom / 24px 2px no-repeat,
+    linear-gradient(var(--acc), var(--acc)) left bottom / 2px 24px no-repeat,
+    linear-gradient(var(--acc), var(--acc)) right bottom / 24px 2px no-repeat,
+    linear-gradient(var(--acc), var(--acc)) right bottom / 2px 24px no-repeat;
+  opacity: 0.6;
+}
+.panel::before { left: 30px; right: 30px; border-radius: 0 0 3px 3px; }
